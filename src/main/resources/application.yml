@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: QuizJam
+
+server:
+  port: 8081
