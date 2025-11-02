@@ -1,5 +1,7 @@
 package com.hamplz.quizjam.user;
 
+import com.hamplz.quizjam.exception.ErrorCode;
+import com.hamplz.quizjam.exception.NotFoundException;
 import com.hamplz.quizjam.user.dto.UserCreateRequest;
 import com.hamplz.quizjam.user.dto.UserInfoResponse;
 import com.hamplz.quizjam.user.dto.UserUpdateRequest;
@@ -25,14 +27,14 @@ public class UserService {
 
     public UserInfoResponse get(Long id) {
         User user  = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         return new UserInfoResponse(user.getNickname());
     }
 
     public UserInfoResponse update(Long id, UserUpdateRequest userUpdateRequest) {
         User user  = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         user.update(userUpdateRequest.nickname());
 
@@ -41,7 +43,7 @@ public class UserService {
 
     public void delete(Long id) {
         User user  = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
 
         userRepository.delete(user);
     }

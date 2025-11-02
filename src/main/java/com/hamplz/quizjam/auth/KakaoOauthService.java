@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class KakaoOauthService {

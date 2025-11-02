@@ -9,21 +9,29 @@ import org.springframework.web.bind.annotation.*;
 public class QuizRoomController {
 
     @PostMapping
-    public ResponseEntity<QuizRoomResponse> createQuizRoom(
-    ) {
-        return null;
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<QuizRoomResponse> getQuizRoom(
+    public ResponseEntity<QuizRoomResponse> create(
 
     ) {
         return null;
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<QuizRoomResponse> deleteQuizRoom(
+    @GetMapping("/{roomId}")
+    public ResponseEntity<QuizRoomResponse> get(
+        @RequestParam("roomId") Long id
+    ) {
+        return null;
+    }
 
+    @PutMapping("/{roomId}")
+    public ResponseEntity<QuizRoomResponse> update(
+        @RequestParam("roomId") Long id
+    ) {
+        return null;
+    }
+
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<QuizRoomResponse> delete(
+        @RequestParam("roomId") Long id
     ) {
         return null;
     }

@@ -1,13 +1,11 @@
 spring:
   config:
     import: optional:classpath:application-secret.yml
+  activate:
+    on-profile: dev
 
   application:
     name: QuizJam
-
-  config:
-    import:
-      - classpath:application-secret.yml
 
   sql:
     init:

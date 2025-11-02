@@ -6,7 +6,6 @@ import com.hamplz.quizjam.auth.entity.DeviceType;
 import com.hamplz.quizjam.auth.entity.RefreshToken;
 import com.hamplz.quizjam.user.User;
 import io.jsonwebtoken.Claims;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -31,7 +30,7 @@ public class TokenIssuer {
         LocalDateTime expiryDate = claims.getExpiration().toInstant()
                 .atZone(ZoneId.systemDefault()).toLocalDateTime();
 
-        RefreshToken refreshToken = RefreshToken.create(tokenId, user, expiryDate, deviceType, userAgent);
+        RefreshToken refreshToken = RefreshToken.create(tokenId, user, deviceType, userAgent);
         refreshTokenRepository.save(refreshToken);
 
         return new AuthToken(accessToken, refreshTokenValue);

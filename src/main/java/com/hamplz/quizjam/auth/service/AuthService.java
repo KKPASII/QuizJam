@@ -1,6 +1,9 @@
 package com.hamplz.quizjam.auth.service;
 
+import com.hamplz.quizjam.exception.ErrorCode;
+import com.hamplz.quizjam.exception.UnAuthorizedException;
 import com.hamplz.quizjam.util.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,25 +24,30 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    public UsernamePasswordAuthenticationToken authenticationToken(String authorizationHeader) {
+    /**
+     * ✅ JWT를 검증하고, 유효하면 Authentication 반환
+     */
+    public UsernamePasswordAuthenticationToken authenticateToken(String token) {
+        if (token == null || token.isBlank()) return null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null) return null;
 
-        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
-            String jwt = authorizationHeader.substring(BEARER_PREFIX.length());
+        try {
+            if (jwtUtil.validateToken(token)) {
+                String userId = jwtUtil.getUserId(token);
+                Long principalUserId = Long.parseLong(userId);
 
-            try {
-                if (jwtUtil.validateToken(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    String userId = jwtUtil.getUserId(jwt);
-                    Long principalUserId = Long.parseLong(userId);
-
-                    return new UsernamePasswordAuthenticationToken(
-                            principalUserId, null, Collections.emptyList());
-                }
-            } catch (io.jsonwebtoken.ExpiredJwtException e) {
-                throw new RuntimeException("만료된 토큰");
-            } catch (JwtException | NumberFormatException e) {
-                throw new RuntimeException("유효하지 않은 토큰");
+                return new UsernamePasswordAuthenticationToken(
+                    principalUserId, null, Collections.emptyList()
+                );
             }
+        } catch (ExpiredJwtException e) {
+            log.warn("⚠️ 만료된 JWT: {}", e.getMessage());
+            throw new UnAuthorizedException(ErrorCode.EXPIRED_TOKEN);
+        } catch (JwtException | NumberFormatException e) {
+            log.warn("❌ 유효하지 않은 JWT: {}", e.getMessage());
+            throw new UnAuthorizedException(ErrorCode.INVALID_TOKEN);
         }
+
         return null;
     }
 }

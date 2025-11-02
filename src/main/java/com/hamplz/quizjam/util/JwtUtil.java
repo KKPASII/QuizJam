@@ -1,114 +1,115 @@
 package com.hamplz.quizjam.util;
 
+import com.hamplz.quizjam.exception.ErrorCode;
+import com.hamplz.quizjam.exception.UnAuthorizedException;
 import com.hamplz.quizjam.user.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
 public class JwtUtil {
-    private final Key secretKey;
-    private final long accessTokenValidityInMilliseconds;
-    private final long refreshTokenValidityInMilliseconds;
-    private static final String BEARER = "Bearer ";
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    public JwtUtil(@Value("${jwt.secret}") String secret,
-                   @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidity,
-                   @Value("${jwt.refresh-token-validity-in-seconds}") long refreshTokenValidity) {
+    private final Key secretKey;
+    private final long accessTokenValidityInMs;
+    private final long refreshTokenValidityInMs;
+
+    public JwtUtil(
+        @Value("${jwt.secret}") String secret,
+        @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidity,
+        @Value("${jwt.refresh-token-validity-in-seconds}") long refreshTokenValidity
+    ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.accessTokenValidityInMilliseconds = accessTokenValidity * 1000;
-        this.refreshTokenValidityInMilliseconds = refreshTokenValidity * 1000;
+        this.accessTokenValidityInMs = accessTokenValidity * 1000;
+        this.refreshTokenValidityInMs = refreshTokenValidity * 1000;
     }
 
     public String generateAccessToken(User user) {
         Date now = new Date();
-        Date expirationTime = new Date(now.getTime() + accessTokenValidityInMilliseconds);
+        Date expiration = new Date(now.getTime() + accessTokenValidityInMs);
 
         return Jwts.builder()
                 .setSubject(user.getId().toString())
                 .setId(UUID.randomUUID().toString())
                 .claim("nickname", user.getNickname())
                 .setIssuedAt(now)
-                .setExpiration(expirationTime)
+                .setExpiration(expiration)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String generateRefreshToken(User user) {
         Date now = new Date();
-        Date expirationTime = new Date(now.getTime() + refreshTokenValidityInMilliseconds);
+        Date expiration = new Date(now.getTime() + refreshTokenValidityInMs);
 
         return Jwts.builder()
                 .setSubject(user.getId().toString())
                 .setId(UUID.randomUUID().toString())
                 .setIssuedAt(now)
-                .setExpiration(expirationTime)
+                .setExpiration(expiration)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractToken(HttpServletRequest request) {
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header != null && header.startsWith(BEARER)) {
-            return header.substring(BEARER.length());
-        }
+    public String extractCookieValue(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) return null;
 
-        if (request.getCookies() != null) {
-            return Arrays.stream(request.getCookies())
-                    .filter(c -> "accessToken".equals(c.getName()))
-                    .findFirst()
-                    .map(c -> {
-                        try {
-                            String v = URLDecoder.decode(c.getValue(), StandardCharsets.UTF_8);
-                            if (v.startsWith(BEARER)) {
-                                return v.substring(BEARER.length());
-                            }
-                            return v;
-                        } catch (Exception ex) {
-                            return null;
-                        }
-                    })
-                    .orElse(null);
-        }
-        return null;
+        return Arrays.stream(request.getCookies())
+            .filter(cookie -> name.equalsIgnoreCase(cookie.getName()))
+            .map(cookie -> decode(cookie.getValue()))
+            .filter(value -> !value.isBlank())
+            .findFirst()
+            .orElse(null);
+    }
+
+    public String extractAccessToken(HttpServletRequest request) {
+        return extractCookieValue(request, "accessToken");
     }
 
     public String extractRefreshToken(HttpServletRequest request) {
-        return Arrays.stream(request.getCookies())
-                .filter(c -> "refreshToken".equals(c.getName()))
-                .findFirst()
-                .map(c -> {
-                    try {
-                        String v = URLDecoder.decode(c.getValue(), StandardCharsets.UTF_8);
-                        if (v.startsWith(BEARER)) {
-                            return v.substring(BEARER.length());
-                        }
-                        return v;
-                    } catch (Exception ex) {
-                        return null;
-                    }
-                })
-                .orElseThrow(() -> new RuntimeException("리프레시 토큰이 존재하지 않습니다."));
+        String token = extractCookieValue(request, "refreshToken");
+        if (token == null) {
+            throw new UnAuthorizedException(ErrorCode.MISSING_TOKEN);
+        }
+        return token;
+    }
+
+    private String decode(String value) {
+        try {
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            logger.warn("⚠️ Invalid cookie encoding: {}", e.getMessage());
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token);
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            logger.info("⚠️ 만료된 토큰");
+            return false;
         } catch (JwtException | IllegalArgumentException e) {
+            logger.warn("❌ 유효하지 않은 토큰: {}", e.getMessage());
             return false;
         }
     }
@@ -121,9 +122,9 @@ public class JwtUtil {
                     .parseClaimsJws(token)
                     .getBody();
         } catch (ExpiredJwtException ex) {
-            throw new RuntimeException("expired token", ex);
+            throw new UnAuthorizedException(ErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException ex) {
-            throw new RuntimeException("invalid token", ex);
+            throw new UnAuthorizedException(ErrorCode.INVALID_TOKEN);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.hamplz.quizjam.user;
 
+import com.hamplz.quizjam.auth.controller.LoginUser;
 import com.hamplz.quizjam.user.dto.UserCreateRequest;
 import com.hamplz.quizjam.user.dto.UserInfoResponse;
 import com.hamplz.quizjam.user.dto.UserUpdateRequest;
@@ -23,26 +24,26 @@ public class UserController {
         return ResponseEntity.ok(userService.create(userCreateRequest));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/me")
     public ResponseEntity<UserInfoResponse> get(
-            @PathVariable("id") Long id
+        @LoginUser Long userId
     ) {
-        return ResponseEntity.ok(userService.get(id));
+        return ResponseEntity.ok(userService.get(userId));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/me")
     public ResponseEntity<UserInfoResponse> update(
-            @PathVariable("id") Long id,
-            @Valid @RequestBody UserUpdateRequest userUpdateRequest
+        @LoginUser Long userId,
+        @Valid @RequestBody UserUpdateRequest userUpdateRequest
     ) {
-        return ResponseEntity.ok(userService.update(id, userUpdateRequest));
+        return ResponseEntity.ok(userService.update(userId, userUpdateRequest));
     }
 
-    @DeleteMapping("{id}")
+    @DeleteMapping("/me")
     public ResponseEntity<UserInfoResponse> delete(
-            @PathVariable("id") Long id
+        @LoginUser Long userId
     ) {
-        userService.delete(id);
+        userService.delete(userId);
 
         return ResponseEntity.noContent().build();
     }

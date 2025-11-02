@@ -43,12 +43,23 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, ex.getStatusCode());
     }
 
-//    @ExceptionHandler(InvalidProductNameException.class)
-//    public ResponseEntity<Map<String, String>> handleInvalidProductName(InvalidProductNameException ex) {
-//        Map<String, String> error = new HashMap<>();
-//        error.put("error", ex.getMessage());
-//        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
-//    }
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNotFoundException(NotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity
+            .status(ex.getErrorCode().getStatus())
+            .body(error);
+    }
+
+    @ExceptionHandler(UnAuthorizedException.class)
+    public ResponseEntity<Map<String, String>> handleUnAuthorizedException(UnAuthorizedException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getErrorCode().getMessage());
+        return ResponseEntity
+            .status(ex.getErrorCode().getStatus())
+            .body(error);
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllUnexpectedException(Exception ex) {
@@ -57,23 +68,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-//    @ExceptionHandler(UnAuthenticatedException.class)
-//    public ResponseEntity<Map<String, String>> handleUnauthorizedException(UnAuthenticatedException ex) {
-//        Map<String, String> error = new HashMap<>();
-//        error.put("error", ex.getMessage());
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.add("WWW-Authenticate", "Bearer");
-//        return new ResponseEntity<>(error, headers, HttpStatus.UNAUTHORIZED);
-//    }
-//
-//    @ExceptionHandler(UnAuthorizedException.class)
-//    public ResponseEntity<Map<String, String>> handleUnauthorizedException(UnAuthorizedException ex) {
-//        Map<String, String> error = new HashMap<>();
-//        error.put("error", ex.getMessage());
-//        HttpHeaders headers = new HttpHeaders();
-//        return new ResponseEntity<>(error, headers, HttpStatus.FORBIDDEN);
-//    }
-//
 //    @ExceptionHandler(DuplicatedEmailException.class)
 //    public ResponseEntity<Map<String, String>> handleDuplicatedEmailException(DuplicatedEmailException ex) {
 //        Map<String, String> error = new HashMap<>();
