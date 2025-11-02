@@ -2,6 +2,10 @@ spring:
   application:
     name: QuizJam
 
+  config:
+    import:
+      - classpath:application-secret.yml
+
   sql:
     init:
       mode: never

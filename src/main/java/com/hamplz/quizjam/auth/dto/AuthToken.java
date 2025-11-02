@@ -1,4 +1,4 @@
 package com.hamplz.quizjam.auth.dto;
 
-public record AuthToken(String accessToken) {
+public record AuthToken(String accessToken, String refreshToken) {
 }

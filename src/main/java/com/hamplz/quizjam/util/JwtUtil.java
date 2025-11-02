@@ -83,6 +83,24 @@ public class JwtUtil {
         return null;
     }
 
+    public String extractRefreshToken(HttpServletRequest request) {
+        return Arrays.stream(request.getCookies())
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .findFirst()
+                .map(c -> {
+                    try {
+                        String v = URLDecoder.decode(c.getValue(), StandardCharsets.UTF_8);
+                        if (v.startsWith(BEARER)) {
+                            return v.substring(BEARER.length());
+                        }
+                        return v;
+                    } catch (Exception ex) {
+                        return null;
+                    }
+                })
+                .orElseThrow(() -> new RuntimeException("리프레시 토큰이 존재하지 않습니다."));
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -104,10 +122,8 @@ public class JwtUtil {
                     .getBody();
         } catch (ExpiredJwtException ex) {
             throw new RuntimeException("expired token", ex);
-            //throw new UnauthorizedException(ErrorCode.EXPIRED_TOKEN, ex.getMessage());
         } catch (JwtException | IllegalArgumentException ex) {
             throw new RuntimeException("invalid token", ex);
-            //throw new UnauthorizedException(ErrorCode.INVALID_TOKEN, ex.getMessage());
         }
     }
 

@@ -21,9 +21,15 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS 통합
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                        .cacheControl(cache -> cache.disable())
+                ) // ✅ H2 콘솔 허용
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().permitAll()
                 );
+        //http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }
