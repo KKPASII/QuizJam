@@ -27,6 +27,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+	implementation 'org.apache.pdfbox:pdfbox:2.0.29'
+	implementation 'com.squareup.okio:okio:3.4.0'
 
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
@@ -49,7 +52,7 @@ dependencies {
 
 	// 통합 테스트
 	// testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-	// testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:junit-jupiter'
 	// testImplementation 'org.testcontainers:mysql'
 }
 

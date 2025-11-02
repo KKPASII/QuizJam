@@ -3,20 +3,33 @@ package com.hamplz.quizjam.quiz.controller;
 import com.hamplz.quizjam.quiz.dto.QuizAnswer;
 import com.hamplz.quizjam.quiz.dto.QuizCreateFormat;
 import com.hamplz.quizjam.quiz.dto.QuizQuestion;
+import com.hamplz.quizjam.quiz.entity.Quiz;
+import com.hamplz.quizjam.quiz.service.QuizGenerationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+
 @RestController
-@RequestMapping("/api/quiz")
+@RequestMapping("/api/quizzes")
 public class QuizController {
+    private final QuizGenerationService quizGenerationService;
+
+    public QuizController(QuizGenerationService quizGenerationService) {
+        this.quizGenerationService = quizGenerationService;
+    }
 
     // 문제 만들기 & 문제 반환
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<QuizQuestion> createQuiz(
-        @RequestPart("quiz") QuizCreateFormat quizFormat,
+        @RequestPart("quiz") QuizCreateFormat quizCreateFormat,
         @RequestPart(value = "file", required = false) MultipartFile file
-    ) {
+    ) throws Exception {
+        File tempFile = File.createTempFile("upload-", ".pdf");
+        file.transferTo(tempFile);
+
+        Quiz quiz = quizGenerationService.generateQuizFromPdf(tempFile, quizCreateFormat);
         return null;
     }
 
