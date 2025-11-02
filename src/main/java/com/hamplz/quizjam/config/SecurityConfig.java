@@ -28,7 +28,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             // ✅ H2 콘솔 접근 허용 & 프레임 허용
-            .headers(headers -> headers.frameOptions(frame -> frame.disable())) // H2 콘솔은 iframe으로 동작
+            .headers(headers ->
+                headers.frameOptions(frame -> frame.disable())
+                .cacheControl(cache -> cache.disable())
+            ) // H2 콘솔은 iframe으로 동작
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll()  // ✅ 콘솔 접근 허용
                 .anyRequest().permitAll()                      // 나머지는 전부 허용 (개발 단계)

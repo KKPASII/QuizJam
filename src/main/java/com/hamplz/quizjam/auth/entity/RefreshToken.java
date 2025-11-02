@@ -26,12 +26,16 @@ public class RefreshToken {
     protected RefreshToken() {
     }
 
-    public RefreshToken(String tokenId, User user, LocalDateTime expiryDate, DeviceType deviceType, String userAgent) {
+    private RefreshToken(String tokenId, User user, LocalDateTime expiryDate, DeviceType deviceType, String userAgent) {
         this.tokenId = tokenId;
         this.user = user;
         this.expiryDate = expiryDate;
         this.deviceType = deviceType;
         this.userAgent = userAgent;
+    }
+
+    public static RefreshToken create(String tokenId, User user, LocalDateTime expiryDate, DeviceType deviceType, String userAgent) {
+        return new RefreshToken(tokenId, user, expiryDate, deviceType, userAgent);
     }
 
     public User getUser() { return user; }
