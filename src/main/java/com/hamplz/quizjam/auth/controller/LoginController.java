@@ -4,6 +4,7 @@ import com.hamplz.quizjam.auth.KakaoOauthService;
 import com.hamplz.quizjam.user.User;
 import com.hamplz.quizjam.util.CookieUtil;
 import com.hamplz.quizjam.util.JwtUtil;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -16,12 +17,10 @@ import java.io.UnsupportedEncodingException;
 public class LoginController {
     private final KakaoOauthService kakaoOauthService;
     private final JwtUtil jwtUtil;
-    private final CookieUtil cookieUtil;
 
-    public LoginController(JwtUtil jwtUtil, KakaoOauthService kakaoOauthService, CookieUtil cookieUtil) {
+    public LoginController(JwtUtil jwtUtil, KakaoOauthService kakaoOauthService) {
         this.jwtUtil = jwtUtil;
         this.kakaoOauthService = kakaoOauthService;
-        this.cookieUtil = cookieUtil;
     }
 
     @GetMapping("/api/kakao/login")
@@ -36,9 +35,10 @@ public class LoginController {
             HttpServletResponse response
     ) throws UnsupportedEncodingException {
 
-        User user = kakaoOauthService.login(code); // 카카오에서 유저 정보 받아오기
-        String token = jwtUtil.generateAccessToken(user); // JWT 생성
-        response.addCookie(CookieUtil.createAccessTokenCookie(token)); // 쿠키에 저장
+        User user = kakaoOauthService.login(code);  // ✅ 카카오 로그인 처리
+        String token = jwtUtil.generateAccessToken(user); // ✅ JWT 발급
+        Cookie cookie = CookieUtil.createAccessTokenCookie(token);
+        CookieUtil.addCookieWithSameSite(response, cookie);
 
         return "redirect:http://localhost:5173/";
     }

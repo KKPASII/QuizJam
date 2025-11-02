@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,7 +33,7 @@ public class KakaoOauthService {
                 .queryParam("response_type", "code")
                 .queryParam("client_id", kakaoProperties.clientId())
                 .queryParam("redirect_uri", kakaoProperties.redirectUri())
-                .queryParam("scope", "talk_message")
+                .queryParam("scope", "profile_nickname")
                 .toUriString();
     }
 
@@ -53,14 +54,10 @@ public class KakaoOauthService {
 
         KakaoUserInfoResponse kakaoUserInfo = kakaoApiClient.getUserInfo(tokenResponse.accessToken());
         Long kakaoUserId = kakaoUserInfo.id();
-        String nickname = null;
-        try {
-            nickname = kakaoUserInfo.kakaoAccount().profile().nickname();
-        } catch (Exception ignored) {}
-
-        if (nickname == null || nickname.isBlank()) {
-            nickname = "사용자-" + UUID.randomUUID().toString().substring(0, 6);
-        }
+        String nickname = Optional.ofNullable(kakaoUserInfo.kakaoAccount())
+            .map(KakaoUserInfoResponse.KakaoAccount::profile)
+            .map(KakaoUserInfoResponse.KakaoProfile::nickname)
+            .orElse("Guest");
 
         return userService.findUserByKakaoId(kakaoUserId, nickname);
     }

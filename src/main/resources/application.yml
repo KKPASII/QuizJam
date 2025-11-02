@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:classpath:application-secret.yml
+
   application:
     name: QuizJam
 
@@ -12,10 +15,10 @@ spring:
     username: sa
     password:                      # 기본 비밀번호 없음
 
-    h2:
-      console:
-        enabled: true                # 웹 콘솔 활성화
-        path: /h2-console
+  h2:
+    console:
+      enabled: true                # 웹 콘솔 활성화
+      path: /h2-console
 
   jpa:
     defer-datasource-initialization: true
@@ -45,8 +48,16 @@ spring:
             user-name-attribute: id
 server:
   port: 8081
+  servlet:
+    encoding:
+      force: true
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity-in-seconds: 1800       # 30분
-  refresh-token-validity-in-seconds: 2592000   # 30일
+  access-token-validity-in-seconds: 1800
+  refresh-token-validity-in-seconds: 2592000
+
+logging:
+  level:
+    com.hamplz.quizjam.auth: DEBUG
+    org.springframework.web.client: DEBUG
