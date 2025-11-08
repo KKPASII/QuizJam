@@ -5,6 +5,6 @@ public record QuizCreateFormat(
     String type,
     String difficulty,
     String questionCount,
-    String timeMinutes
+    String timeSec
 ) {
 }

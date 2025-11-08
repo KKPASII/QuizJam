@@ -22,7 +22,7 @@ public class Quiz {
 
     private int questionCount;
 
-    private String timeLimitMin;
+    private String timeLimitSec;
 
     protected Quiz() {}
 }

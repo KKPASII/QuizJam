@@ -61,5 +61,11 @@ jwt:
 
 logging:
   level:
-    com.hamplz.quizjam.auth: DEBUG
+    root: INFO
+    com.hamplz.quizjam: DEBUG
     org.springframework.web.client: DEBUG
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  api-url: https://api.openai.com/v1/chat/completions
+  model: gpt-3.5-turbo

@@ -1,4 +1,7 @@
 package com.hamplz.quizjam.quiz.repository;
 
-public interface AnswerRepository {
+import com.hamplz.quizjam.quiz.entity.Answer;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AnswerRepository extends JpaRepository<Answer, Long> {
 }
