@@ -1,1 +1,1 @@
-<video src="https://github.com/hamplz/QuizJam/raw/main/src/main/resources/static/video/shootdoori.mp4" controls width="1280"></video>
+<video src="https://github.com/KKPASII/QuizJam/tree/main/src/main/resources/static/video/shootdoori.mp4" controls width="1280"></video>
