@@ -1,0 +1,1 @@
+<video src="./src/main/resources/static/video/shootdoori.mp4" controls width="1280"></video>
