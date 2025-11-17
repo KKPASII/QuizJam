@@ -1,0 +1,79 @@
+spring:
+  config:
+    import: optional:classpath:application-secret.yml
+  activate:
+    on-profile: dev
+
+  application:
+    name: QuizJam
+
+  sql:
+    init:
+      mode: never
+
+  task:
+    execution:
+      simple:
+        async:
+          enabled: false
+
+  datasource:
+    url: jdbc:h2:mem:test       # 인메모리 H2 (애플리케이션 실행 시 새로 생성됨)
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:                      # 기본 비밀번호 없음
+
+  h2:
+    console:
+      enabled: true                # 웹 콘솔 활성화
+      path: /h2-console
+
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true                 # 실행되는 SQL 보기
+    properties:
+      hibernate:
+        format_sql: true           # SQL 예쁘게 출력
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: "http://localhost:8081/kakao/callback"
+            authorization-grant-type: authorization_code
+            scope:
+              - profile_nickname
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+server:
+  port: 8081
+  servlet:
+    encoding:
+      force: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-in-seconds: 1800
+  refresh-token-validity-in-seconds: 2592000
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG  # SQL 쿼리
+    com.hamplz.quizjam: DEBUG
+    org.springframework.web.client: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  api-url: https://api.openai.com/v1/chat/completions
+  model: gpt-3.5-turbo

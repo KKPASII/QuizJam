@@ -1,1 +1,0 @@
-<img src="./src/main/resources/static/image/슛두리_시연영상.gif" alt="시연영상" width="1280"/>

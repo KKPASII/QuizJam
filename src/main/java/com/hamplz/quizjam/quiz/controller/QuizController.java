@@ -1,66 +1,89 @@
 package com.hamplz.quizjam.quiz.controller;
 
-import com.hamplz.quizjam.openai.dto.OpenAiResponse;
+import com.hamplz.quizjam.auth.controller.LoginUser;
 import com.hamplz.quizjam.quiz.dto.QuizAnswer;
 import com.hamplz.quizjam.quiz.dto.QuizCreateFormat;
 import com.hamplz.quizjam.quiz.dto.QuizQuestion;
-import com.hamplz.quizjam.quiz.service.QuizGenerateService;
+import com.hamplz.quizjam.quiz.dto.QuizResponse;
+import com.hamplz.quizjam.quiz.service.QuizService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/quizzes")
 public class QuizController {
     private static final Logger log = LoggerFactory.getLogger(QuizController.class);
 
-    private final QuizGenerateService quizGenerationService;
+    private final QuizService quizService;
 
-    public QuizController(QuizGenerateService quizGenerationService) {
-        this.quizGenerationService = quizGenerationService;
+    public QuizController(QuizService quizService) {
+        this.quizService = quizService;
     }
 
-    // 문제 생성 API
-    @PostMapping(consumes = {"multipart/form-data"})
-    public ResponseEntity<OpenAiResponse> createQuiz(
+    @PostMapping(
+        consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE }
+    )
+    public ResponseEntity<List<QuizQuestion>> createQuiz(
+        @LoginUser Long userId,
         @RequestPart("quiz") QuizCreateFormat quizCreateFormat,
         @RequestPart(value = "file", required = false) MultipartFile file
     ) throws Exception {
 
         try {
             log.info("📥 퀴즈 생성 요청: {}", quizCreateFormat.title());
-            OpenAiResponse response = quizGenerationService.generateQuizFromPdf(file);
+            List<QuizQuestion> quizQuestions = quizService.createQuiz(userId, quizCreateFormat, file);
             log.info("✅ 퀴즈 생성 완료");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(quizQuestions);
         } catch (Exception e) {
             log.error("❌ 퀴즈 생성 실패", e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    // 문제 조회하기
     @GetMapping("/{id}")
-    public ResponseEntity<QuizQuestion> getQuiz(
-        @PathVariable long id
+    public ResponseEntity<QuizResponse> getQuiz(
+        @PathVariable("id") Long id
     ) {
-        return null;
+        return ResponseEntity.ok(quizService.getQuiz(id));
     }
 
-    // 정답 조회하기
-    @GetMapping("/{id}/answer")
-    public ResponseEntity<QuizAnswer> getQuizAnswer(
-        @PathVariable long id
+    @GetMapping("/me")
+    public ResponseEntity<Page<QuizResponse>> getQuizzes(
+        @LoginUser Long userId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
     ) {
-        return null;
+        return ResponseEntity.ok(quizService.getQuizzes(userId, page, size));
     }
 
-    // 퀴즈 문제&정답 삭제하기
+
+    @GetMapping("/{id}/questions")
+    public ResponseEntity<List<QuizQuestion>> getQuizQuestions(
+        @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(quizService.getQuizQuestions(id));
+    }
+
+    @GetMapping("/{id}/answers")
+    public ResponseEntity<List<QuizAnswer>> getQuizAnswer(
+        @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(quizService.getQuizAnswers(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuiz(
-        @PathVariable long id
+        @PathVariable Long id
     ) {
-        return null;
+        quizService.deleteQuiz(id);
+
+        return ResponseEntity.noContent().build();
     }
 }

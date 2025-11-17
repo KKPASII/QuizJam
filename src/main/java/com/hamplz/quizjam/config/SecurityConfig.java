@@ -44,7 +44,7 @@ public class SecurityConfig {
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())) // H2 콘솔 허용
             //.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**", "/api/kakao/login", "/kakao/callback").permitAll()  // ✅ 콘솔 접근 허용
+                .requestMatchers("/h2-console/**", "/api/kakao/login", "/api/kakao/callback").permitAll()  // ✅ 콘솔 접근 허용
                 .requestMatchers("/api/auth/refresh").permitAll()
                 .anyRequest().permitAll()                      // 나머지는 전부 허용 (개발 단계)
                 //.anyRequest().authenticated()

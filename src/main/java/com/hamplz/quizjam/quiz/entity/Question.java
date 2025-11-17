@@ -22,4 +22,43 @@ public class Question {
     private Answer answer;
 
     protected Question() {}
+
+    private Question(Quiz quiz, String questionText, String options, String hint) {
+        this.quiz = quiz;
+        this.questionText = questionText;
+        this.options = options;
+        this.hint = hint;
+    }
+
+    public static Question create(Quiz quiz, String questionText, String options, String hint) {
+        return new Question(quiz, questionText, options, hint);
+    }
+
+    public Quiz getQuiz() {
+        return this.quiz;
+    }
+
+    public String getQuestionText() {
+        return this.questionText;
+    }
+
+    public String getOptions() {
+        return this.options;
+    }
+
+    public String getHint() {
+        return this.hint;
+    }
+
+    public Answer getAnswer() {
+        return this.answer;
+    }
+
+    public void setAnswer(Answer answer) {
+        this.answer = answer;
+    }
+
+    public void setQuiz(Quiz quiz) {
+        this.quiz = quiz;
+    }
 }

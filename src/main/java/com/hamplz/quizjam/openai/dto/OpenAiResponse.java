@@ -8,17 +8,13 @@ public record OpenAiResponse(
         List<AnswerForm> answers
 ) {
     public record QuestionForm(
-            int id,
-            int quiz_id,
-            String question_text,
+            String questionText,
             Map<String, String> options,
             String hint
     ) {}
 
     public record AnswerForm(
-            int id,
-            int question_id,
-            String correct_answer,
+            String correctAnswer,
             String explanation
     ) {}
 }

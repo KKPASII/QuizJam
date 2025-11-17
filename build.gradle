@@ -31,6 +31,12 @@ dependencies {
 	implementation 'org.apache.pdfbox:pdfbox:2.0.29'
 	implementation 'com.squareup.okio:okio:3.4.0'
 
+	// Spring Boot + AOP + Micrometer(Prometheus) + Actuator
+	// @ExecutionTime 붙은 메서드들의 평균 실행 시간, 호출 횟수, 최대 시간 등을 Actuator → Prometheus → Grafana 로 모니터링 가능
+	implementation 'io.micrometer:micrometer-core'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
