@@ -1,11 +1,15 @@
 package com.hamplz.quizjam.quiz.dto;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hamplz.quizjam.openai.dto.OpenAiResponse;
 import com.hamplz.quizjam.quiz.entity.Answer;
 import com.hamplz.quizjam.quiz.entity.Question;
 import com.hamplz.quizjam.quiz.entity.Quiz;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,6 +17,8 @@ import java.util.stream.Collectors;
 import static com.hamplz.quizjam.util.JsonUtil.MAPPER;
 
 public class QuizMapper {
+
+    private static final Logger log = LoggerFactory.getLogger(QuizMapper.class);
 
     private QuizMapper() {}
 
@@ -30,7 +36,7 @@ public class QuizMapper {
     public static QuizQuestion toQuizQuestion(Question question) {
         return new QuizQuestion(
             question.getQuestionText(),
-            question.getOptions(),
+            question.getOptions() != null ? question.getOptions() : Collections.emptyMap(),
             question.getHint()
         );
     }
@@ -58,18 +64,9 @@ public class QuizMapper {
         return openAiResponse.questions().stream()
             .map(q -> new QuizQuestion(
                 q.questionText(),
-                mapToJson(q.options()),
+                q.options(),
                 q.hint()
             ))
             .collect(Collectors.toList());
-    }
-
-    private static String mapToJson(Map<String, String> map) {
-        if (map == null || map.isEmpty()) return null;
-        try {
-            return MAPPER.writeValueAsString(map);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("옵션 직렬화 실패", e);
-        }
     }
 }

@@ -1,5 +1,6 @@
 package com.hamplz.quizjam.quiz.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hamplz.quizjam.exception.ErrorCode;
 import com.hamplz.quizjam.exception.NotFoundException;
 import com.hamplz.quizjam.openai.OpenAiService;
@@ -11,7 +12,9 @@ import com.hamplz.quizjam.quiz.entity.Quiz;
 import com.hamplz.quizjam.quiz.repository.AnswerRepository;
 import com.hamplz.quizjam.quiz.repository.QuestionRepository;
 import com.hamplz.quizjam.quiz.repository.QuizRepository;
+import com.hamplz.quizjam.user.User;
 import com.hamplz.quizjam.user.UserRepository;
+import com.hamplz.quizjam.util.JsonUtil;
 import com.hamplz.quizjam.util.PdfUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +30,6 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-@Transactional
 public class QuizService {
 
     private static final Logger log = LoggerFactory.getLogger(QuizService.class);
@@ -46,20 +48,37 @@ public class QuizService {
         this.userRepository = userRepository;
     }
 
-    public List<QuizQuestion> createQuiz(Long userId, QuizCreateFormat quizCreateFormat, MultipartFile file) throws IOException {
+    public QuizResponse createQuiz(Long userId, QuizCreateFormat quizCreateFormat, MultipartFile file) throws IOException {
         userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND));
+
+        // ✅ 1. 파일 유효성 검사 추가 (필수)
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("PDF 파일이 비어있거나 업로드되지 않았습니다.");
+        }
+
+        // ✅ 2. Content-Type 검사 (선택 사항이지만 추천)
+        if (!"application/pdf".equals(file.getContentType())) {
+            throw new IllegalArgumentException("PDF 파일만 업로드 가능합니다.");
+        }
 
         File tempFile = File.createTempFile("upload-", ".pdf");
         String pdfText;
 
         try {
-            // 1️⃣ PDF 텍스트 추출
-            log.info("📄 PDF 텍스트 추출 시작...");
+            log.info("📄 PDF 파일 처리 시작: {} (Size: {} bytes)", file.getOriginalFilename(), file.getSize());
             file.transferTo(tempFile);
+
+            // PDF 추출
             pdfText = PdfUtil.extractText(tempFile);
-            log.debug("📝 추출된 텍스트 (앞부분 300자): {}",
-                pdfText.substring(0, Math.min(300, pdfText.length())));
+
+            // 텍스트가 너무 짧으면(추출 실패 등) 에러 처리
+            if (pdfText == null || pdfText.trim().isEmpty()) {
+                throw new IOException("PDF에서 텍스트를 추출할 수 없습니다. (이미지 위주 파일일 수 있음)");
+            }
+
+            log.debug("📝 추출된 텍스트 (앞부분 300자): {}", pdfText.substring(0, Math.min(300, pdfText.length())));
+
         } catch (Exception e) {
             log.error("❌ PDF 추출 실패: {}", e.getMessage(), e);
             throw new IOException("PDF 처리 실패", e);
@@ -73,7 +92,58 @@ public class QuizService {
 
         OpenAiResponse openAiResponse = openAiService.generateQuizFromPdf(userId, pdfText, quizCreateFormat);
 
-        return QuizMapper.toQuizQuestionList(openAiResponse);
+        Quiz savedQuiz = saveQuizData(userId, quizCreateFormat, openAiResponse);
+
+        return QuizMapper.toQuizResponse(savedQuiz);
+    }
+
+    @Transactional
+    public Quiz saveQuizData(Long userId, QuizCreateFormat quizCreateFormat, OpenAiResponse result) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+
+        // 1️⃣ Quiz 엔티티 생성
+        Quiz quiz = Quiz.create(
+            user,
+            quizCreateFormat.title(),
+            quizCreateFormat.type(),
+            quizCreateFormat.difficulty(),
+            quizCreateFormat.questionCount(),
+            quizCreateFormat.timeLimitMin()
+        );
+
+        // 2️⃣ 데이터 검증
+        if (result.questions().size() != result.answers().size()) {
+            log.error("❌ Question과 Answer 개수 불일치: Q={}, A={}",
+                result.questions().size(), result.answers().size());
+            throw new IllegalStateException("Question과 Answer 개수가 일치하지 않습니다.");
+        }
+
+        // 3️⃣ 순서 기반 Question + Answer 매핑
+        for (int i = 0; i < result.questions().size(); i++) {
+            OpenAiResponse.QuestionForm q = result.questions().get(i);
+            OpenAiResponse.AnswerForm a = result.answers().get(i);
+
+            Question question = Question.create(
+                quiz,
+                q.questionText(),
+                q.options(),
+                q.hint()
+            );
+
+            // Answer 생성 및 연결
+            Answer answer = Answer.create(
+                question,
+                a.correctAnswer(),
+                a.explanation()
+            );
+
+            question.setAnswer(answer);
+            quiz.addQuestion(question);
+        }
+
+        // 4️⃣ 저장 (Cascade로 Question, Answer도 함께 저장됨)
+        return quizRepository.save(quiz);
     }
 
     @Transactional(readOnly = true)

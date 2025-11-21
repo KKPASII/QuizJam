@@ -1,6 +1,9 @@
 package com.hamplz.quizjam.quiz.entity;
 
+import com.hamplz.quizjam.util.JsonMapConverter;
 import jakarta.persistence.*;
+
+import java.util.Map;
 
 @Entity
 public class Question {
@@ -13,8 +16,9 @@ public class Question {
 
     private String questionText;
 
-    @Column(columnDefinition = "json")
-    private String options;  // 보기 {"A": "사과", "B": "바나나"}
+    @Convert(converter = JsonMapConverter.class)
+    @Column(columnDefinition = "json") // MySQL이라면 json, 아니라면 text나 clob 권장
+    private Map<String, String> options;
 
     private String hint;
 
@@ -23,14 +27,14 @@ public class Question {
 
     protected Question() {}
 
-    private Question(Quiz quiz, String questionText, String options, String hint) {
+    private Question(Quiz quiz, String questionText, Map<String, String> options, String hint) {
         this.quiz = quiz;
         this.questionText = questionText;
         this.options = options;
         this.hint = hint;
     }
 
-    public static Question create(Quiz quiz, String questionText, String options, String hint) {
+    public static Question create(Quiz quiz, String questionText, Map<String, String> options, String hint) {
         return new Question(quiz, questionText, options, hint);
     }
 
@@ -42,7 +46,7 @@ public class Question {
         return this.questionText;
     }
 
-    public String getOptions() {
+    public Map<String, String> getOptions() {
         return this.options;
     }
 

@@ -1,10 +1,7 @@
 package com.hamplz.quizjam.quiz.controller;
 
 import com.hamplz.quizjam.auth.controller.LoginUser;
-import com.hamplz.quizjam.quiz.dto.QuizAnswer;
-import com.hamplz.quizjam.quiz.dto.QuizCreateFormat;
-import com.hamplz.quizjam.quiz.dto.QuizQuestion;
-import com.hamplz.quizjam.quiz.dto.QuizResponse;
+import com.hamplz.quizjam.quiz.dto.*;
 import com.hamplz.quizjam.quiz.service.QuizService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,23 +25,18 @@ public class QuizController {
     }
 
     @PostMapping(
-        consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE }
+        consumes = { MediaType.MULTIPART_FORM_DATA_VALUE }
     )
-    public ResponseEntity<List<QuizQuestion>> createQuiz(
+    public ResponseEntity<QuizResponse> createQuiz(
         @LoginUser Long userId,
         @RequestPart("quiz") QuizCreateFormat quizCreateFormat,
-        @RequestPart(value = "file", required = false) MultipartFile file
+        @RequestPart(value = "file") MultipartFile file
     ) throws Exception {
+        log.info("📥 퀴즈 생성 요청: {}", quizCreateFormat.title());
+        QuizResponse quizQuestions = quizService.createQuiz(userId, quizCreateFormat, file);
+        log.info("✅ 퀴즈 생성 완료");
 
-        try {
-            log.info("📥 퀴즈 생성 요청: {}", quizCreateFormat.title());
-            List<QuizQuestion> quizQuestions = quizService.createQuiz(userId, quizCreateFormat, file);
-            log.info("✅ 퀴즈 생성 완료");
-            return ResponseEntity.ok(quizQuestions);
-        } catch (Exception e) {
-            log.error("❌ 퀴즈 생성 실패", e);
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok(quizQuestions);
     }
 
     @GetMapping("/{id}")

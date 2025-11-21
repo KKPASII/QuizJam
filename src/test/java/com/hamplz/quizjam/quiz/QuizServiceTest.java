@@ -3,7 +3,6 @@ package com.hamplz.quizjam.quiz;
 import com.hamplz.quizjam.openai.OpenAiService;
 import com.hamplz.quizjam.openai.dto.OpenAiResponse;
 import com.hamplz.quizjam.quiz.dto.QuizCreateFormat;
-import com.hamplz.quizjam.quiz.service.QuizAsyncService;
 import com.hamplz.quizjam.quiz.service.QuizService;
 import com.hamplz.quizjam.user.User;
 import com.hamplz.quizjam.user.UserRepository;
@@ -29,9 +28,6 @@ class QuizServiceTest {
 
     @Mock
     private OpenAiService openAiService;
-
-    @Mock
-    private QuizAsyncService quizAsyncService;
 
     @Mock
     private UserRepository userRepository;
