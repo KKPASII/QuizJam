@@ -89,12 +89,12 @@ public class OpenAiService {
                 extraRule = """
                 - 보기(`options`)는 반드시 4개(A~D)로 구성하라.
                 - `correctAnswer`는 "A", "B", "C", "D" 중 하나여야 한다.
-                - **questions와 answers의 순서는 반드시 일치해야 한다.**
                 - **모든 문제에 대해 반드시 유용한 힌트를 작성하라.**
+                - **questions와 answers의 순서는 반드시 일치해야 한다.**
                 """;
             }
 
-            case "주관식" -> {
+            case "단답식" -> {
                 schema = """
             {
               "questions": [
@@ -113,9 +113,13 @@ public class OpenAiService {
             """;
                 extraRule = """
                 - `options`는 null로 설정하라.
-                - `correctAnswer`는 간결한 정답 텍스트로 작성하라.
-                - **questions와 answers의 순서는 반드시 일치해야 한다.**
-                - **모든 문제에 대해 정답을 유추할 수 있는 힌트를 반드시 포함하라.**
+                - `correctAnswer`는 한 단어 또는 짧은 구로 이루어진 단답형이어야 한다.
+                - 문제 문장은 반드시 **단답형을 자연스럽게 유도하는 형태**로 작성하라.
+                  예시: "~의 명칭은 무엇인가?", "~을 무엇이라고 하는가?", "~의 정의는?", "~을 나타내는 용어는?"
+                - "장점은 무엇인가?", "의미는 무엇인가?"처럼 길거나 서술형 답변을 유도하는 질문은 금지한다.
+                - `questionText`는 반드시 단답형 정답이 어색하지 않은 문장으로 작성해야 한다.
+                - `hint`는 정답을 직접적으로 제공하지 말고 간접적인 연관 키워드를 한 문장으로 제시하라.
+                - questions와 answers의 순서는 반드시 일치해야 한다.
                 """;
             }
 
@@ -140,8 +144,10 @@ public class OpenAiService {
                 extraRule = """
                 - `options`는 반드시 {"A": "O", "B": "X"} 순서로 생성하라.
                 - `correctAnswer`는 "A"(O) 또는 "B"(X) 중 하나여야 한다.
-                - **questions와 answers의 순서는 반드시 일치해야 한다.**
-                - **헷갈리기 쉬운 부분에 대한 힌트를 반드시 제공하라.**
+                - 대부분의 OX 문제는 힌트가 필요 없으므로 `hint`는 null로 설정하는 것이 기본이다.
+                - 단, 헷갈릴 수 있는 개념이 있을 때만 매우 간단한 힌트를 한 문장으로 작성하라.
+                - 힌트는 정답을 직접적으로 드러내거나 암시해서는 안 된다.
+                - questions와 answers의 순서는 반드시 일치해야 한다.
                 """;
             }
 
