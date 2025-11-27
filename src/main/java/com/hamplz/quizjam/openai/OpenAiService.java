@@ -7,6 +7,9 @@ import com.hamplz.quizjam.exception.quiz.FailRequestOpenAiException;
 import com.hamplz.quizjam.exception.quiz.InvalidQuizParseException;
 import com.hamplz.quizjam.openai.dto.OpenAiRequest;
 import com.hamplz.quizjam.openai.dto.OpenAiResponse;
+import com.hamplz.quizjam.openai.prompt.PromptTemplate;
+import com.hamplz.quizjam.openai.prompt.factory.QuizPromptStrategyFactory;
+import com.hamplz.quizjam.openai.prompt.strategy.QuizPromptStrategy;
 import com.hamplz.quizjam.quiz.dto.QuizCreateFormat;
 import com.hamplz.quizjam.util.JsonUtil;
 import com.knuddels.jtokkit.Encodings;
@@ -62,141 +65,14 @@ public class OpenAiService {
     }
 
     private String buildPrompt(String pdfText, QuizCreateFormat format) {
-        String type = format.type().toLowerCase(); // "객관식" | "주관식" | "ox"
+        String type = format.type().toLowerCase(); // "객관식" | "단답식" | "ox"
 
-        String schema;
-        String extraRule;
-
-        switch (type) {
-            case "객관식" -> {
-                schema = """
-            {
-              "questions": [
-                {
-                  "questionText": "문제 내용",
-                  "options": { "A": "보기 A", "B": "보기 B", "C": "보기 C", "D": "보기 D" },
-                  "hint": "문제 풀이에 도움이 되는 핵심 힌트 (최대 1문장)"
-                }
-              ],
-              "answers": [
-                {
-                  "correctAnswer": "A|B|C|D",
-                  "explanation": "정답 해설"
-                }
-              ]
-            }
-            """;
-                extraRule = """
-                - 보기(`options`)는 반드시 4개(A~D)로 구성하라.
-                - `correctAnswer`는 "A", "B", "C", "D" 중 하나여야 한다.
-                - **모든 문제에 대해 반드시 유용한 힌트를 작성하라.**
-                - **questions와 answers의 순서는 반드시 일치해야 한다.**
-                """;
-            }
-
-            case "단답식" -> {
-                schema = """
-            {
-              "questions": [
-                {
-                  "questionText": "문제 내용",
-                  "hint": "정답을 유추할 수 있는 핵심 단어 초성이나 설명"
-                }
-              ],
-              "answers": [
-                {
-                  "correctAnswer": "정답 내용 (단답형)",
-                  "explanation": "정답 해설"
-                }
-              ]
-            }
-            """;
-                extraRule = """
-                - `options`는 null로 설정하라.
-                - `correctAnswer`는 한 단어 또는 짧은 구로 이루어진 단답형이어야 한다.
-                - 문제 문장은 반드시 **단답형을 자연스럽게 유도하는 형태**로 작성하라.
-                  예시: "~의 명칭은 무엇인가?", "~을 무엇이라고 하는가?", "~의 정의는?", "~을 나타내는 용어는?"
-                - "장점은 무엇인가?", "의미는 무엇인가?"처럼 길거나 서술형 답변을 유도하는 질문은 금지한다.
-                - `questionText`는 반드시 단답형 정답이 어색하지 않은 문장으로 작성해야 한다.
-                - `hint`는 정답을 직접적으로 제공하지 말고 간접적인 연관 키워드를 한 문장으로 제시하라.
-                - questions와 answers의 순서는 반드시 일치해야 한다.
-                """;
-            }
-
-            case "ox", "o/x", "ox퀴즈" -> {
-                schema = """
-            {
-              "questions": [
-                {
-                  "questionText": "문제 내용",
-                  "options": { "A": "O", "B": "X" },
-                  "hint": "참/거짓을 판단하는 데 도움이 되는 개념 설명"
-                }
-              ],
-              "answers": [
-                {
-                  "correctAnswer": "A|B",
-                  "explanation": "정답 해설"
-                }
-              ]
-            }
-            """;
-                extraRule = """
-                - `options`는 반드시 {"A": "O", "B": "X"} 순서로 생성하라.
-                - `correctAnswer`는 "A"(O) 또는 "B"(X) 중 하나여야 한다.
-                - 대부분의 OX 문제는 힌트가 필요 없으므로 `hint`는 null로 설정하는 것이 기본이다.
-                - 단, 헷갈릴 수 있는 개념이 있을 때만 매우 간단한 힌트를 한 문장으로 작성하라.
-                - 힌트는 정답을 직접적으로 드러내거나 암시해서는 안 된다.
-                - questions와 answers의 순서는 반드시 일치해야 한다.
-                """;
-            }
-
-            default -> {
-                schema = "{ \"questions\": [], \"answers\": [] }";
-                extraRule = "⚠️ 알 수 없는 퀴즈 유형";
-            }
-        }
+        QuizPromptStrategy quizPromptStrategy = QuizPromptStrategyFactory.fromType(type);
+        String schema = quizPromptStrategy.schema();
+        String extraRule = quizPromptStrategy.extraRule();
 
         // 1️⃣ 템플릿(지시사항) 먼저 생성 (PDF 내용 제외)
-        String instructionTemplate = """
-        너는 대한민국의 **교육용 퀴즈 생성 전문 AI**이다.
-        아래 제공된 텍스트와 퀴즈 정보를 바탕으로 학습자가 내용을 복습할 수 있도록 **문제 세트(JSON)**를 생성해야 한다.
-            
-        ## 🧾 퀴즈 정보
-        - 제목: %s
-        - 유형: %s
-        - 난이도: %s
-        - 문항 수: %s개
-        - 제한 시간: %s분
-                    
-        ## 🎯 목표
-        아래 JSON 스키마에 따라 문제(`questions`)와 정답(`answers`)을 **정확히 JSON 형식으로만 출력**하라.
-                    
-        ## ✅ 출력 스키마
-        %s
-                    
-        ## ⚙️ 출력 규칙
-        1. 출력은 반드시 **순수 JSON 한 덩어리**여야 한다.
-        2. `"questions"`와 `"answers"`의 개수와 순서는 1:1로 일치해야 한다.
-        3. **출력이 길어도 끝까지 완전한 JSON을 생성하라.** (중요)
-        4. 문제 난이도: %s
-        5. **힌트(hint) 필드는 학습자에게 도움이 되는 단서를 작성하라.** (매우 중요)
-        
-        ## 🚨 필수 조건
-        - %s
-        
-        ## 📚 참고 텍스트
-        아래 내용을 기반으로 문제를 생성하라 (내용이 너무 길면 일부 생략될 수 있음):
-        """.formatted(
-            format.title(),
-            format.type(),
-            format.difficulty(),
-            format.questionCount(),
-            format.timeLimitMin(),
-            schema,
-            format.difficulty(),
-            extraRule
-        );
+        String instructionTemplate = PromptTemplate.build(format, schema, extraRule);
 
         // 2️⃣ 토큰 계산 및 자르기 (핵심 로직) 🔥
         String finalPdfText = truncatePdfTextIfNeeded(pdfText, instructionTemplate);
