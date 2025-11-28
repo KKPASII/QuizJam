@@ -1,6 +1,5 @@
 package com.hamplz.quizjam.quiz.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hamplz.quizjam.exception.ErrorCode;
 import com.hamplz.quizjam.exception.NotFoundException;
 import com.hamplz.quizjam.openai.OpenAiService;
@@ -14,7 +13,6 @@ import com.hamplz.quizjam.quiz.repository.QuestionRepository;
 import com.hamplz.quizjam.quiz.repository.QuizRepository;
 import com.hamplz.quizjam.user.User;
 import com.hamplz.quizjam.user.UserRepository;
-import com.hamplz.quizjam.util.JsonUtil;
 import com.hamplz.quizjam.util.PdfUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
