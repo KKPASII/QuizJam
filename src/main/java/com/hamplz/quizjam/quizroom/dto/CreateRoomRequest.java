@@ -1,4 +1,4 @@
-package com.hamplz.quizjam.quiz.dto;
+package com.hamplz.quizjam.quizroom.dto;
 
 public record CreateRoomRequest(
     String hostId

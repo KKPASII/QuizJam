@@ -1,4 +1,4 @@
-package com.hamplz.quizjam.quiz.entity;
+package com.hamplz.quizjam.quizroom.entity;
 
 public enum QuizRoomStatus {
     WAITING,
