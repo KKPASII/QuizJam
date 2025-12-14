@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
-    // ✅ 특정 퀴즈의 모든 정답 조회 (Question ID 기준 정렬)
     @Query("""
         SELECT a
         FROM Answer a

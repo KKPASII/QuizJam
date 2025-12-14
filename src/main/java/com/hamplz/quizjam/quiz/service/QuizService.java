@@ -33,16 +33,14 @@ public class QuizService {
     private static final Logger log = LoggerFactory.getLogger(QuizService.class);
 
     private final OpenAiService openAiService;
+    private final QuizQueryService quizQueryService;
     private final QuizRepository quizRepository;
-    private final QuestionRepository questionRepository;
-    private final AnswerRepository answerRepository;
     private final UserRepository userRepository;
 
-    public QuizService(OpenAiService openAiService, QuizRepository quizRepository, QuestionRepository questionRepository, AnswerRepository answerRepository, UserRepository userRepository) {
+    public QuizService(OpenAiService openAiService, QuizQueryService quizQueryService, QuizRepository quizRepository, UserRepository userRepository) {
         this.openAiService = openAiService;
+        this.quizQueryService = quizQueryService;
         this.quizRepository = quizRepository;
-        this.questionRepository = questionRepository;
-        this.answerRepository = answerRepository;
         this.userRepository = userRepository;
     }
 
@@ -146,34 +144,25 @@ public class QuizService {
 
     @Transactional(readOnly = true)
     public QuizResponse getQuiz(Long quizId) {
-        Quiz quiz = quizRepository.findById(quizId).orElseThrow(
-            () -> new NotFoundException(ErrorCode.QUIZ_NOT_FOUND)
-        );
-
-        return QuizMapper.toQuizResponse(quiz);
+        return QuizMapper.toQuizResponse(quizQueryService.getQuiz(quizId));
     }
 
     @Transactional(readOnly = true)
     public Page<QuizResponse> getQuizzes(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-
-        Page<Quiz> quizPage = quizRepository.findAllByUserId(userId, pageable);
+        Page<Quiz> quizPage = quizQueryService.getQuizzes(userId, pageable);
 
         return quizPage.map(QuizMapper::toQuizResponse);
     }
 
     @Transactional(readOnly = true)
     public List<QuizQuestion> getQuizQuestions(Long quizId) {
-        List<Question> questions = questionRepository.findAllByQuizId(quizId);
-
-        return QuizMapper.toQuizQuestionList(questions);
+        return QuizMapper.toQuizQuestionList(quizQueryService.getQuizQuestions(quizId));
     }
 
     @Transactional(readOnly = true)
     public List<QuizAnswer> getQuizAnswers(Long quizId) {
-        List<Answer> answers = answerRepository.findAllByQuizIdOrderByQuestionId(quizId);
-
-        return QuizMapper.toQuizAnswerList(answers);
+        return QuizMapper.toQuizAnswerList(quizQueryService.getQuizAnswers(quizId));
     }
 
     public void deleteQuiz(Long quizId) {
