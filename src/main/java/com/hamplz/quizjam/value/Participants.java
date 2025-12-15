@@ -1,5 +1,6 @@
 package com.hamplz.quizjam.value;
 
+import com.hamplz.quizjam.exception.ConflictException;
 import com.hamplz.quizjam.exception.ErrorCode;
 import com.hamplz.quizjam.exception.quizRoom.RoomFullException;
 import com.hamplz.quizjam.quizroom.entity.Participant;
@@ -8,6 +9,7 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.OneToMany;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 
 @Embeddable
@@ -27,6 +29,7 @@ public class Participants {
 
     public Participant createAnonymous(String nickname) {
         ensureCanJoin();
+        ensureNicknameUnique(nickname);
         return Participant.anonymous(nickname);
     }
 
@@ -38,6 +41,17 @@ public class Participants {
         if (values.size() >= MAX) {
             throw new RoomFullException(ErrorCode.QUIZ_ROOM_FULL);
         }
+    }
+
+    private void ensureNicknameUnique(String nickname) {
+        if (existsNickname(nickname)) {
+            throw new ConflictException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+    }
+
+    private boolean existsNickname(String nickname) {
+        return values.stream()
+                .anyMatch(p -> p.getNickname().equalsIgnoreCase(nickname));
     }
 
     public Participant getHost() {

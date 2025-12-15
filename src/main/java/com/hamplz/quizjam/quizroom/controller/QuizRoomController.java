@@ -55,16 +55,30 @@ public class QuizRoomController {
         return null;
     }
 
-    @PutMapping("/{roomId}/status")
-    public ResponseEntity<QuizRoomResponse> updateStatus(
-        @PathVariable Long roomId,
-        @RequestParam boolean start
+    /** 방 시작 (호스트만) */
+    @PutMapping("/{roomId}/start")
+    public ResponseEntity<QuizRoomResponse> start(
+            @PathVariable Long roomId,
+            @LoginUser Long userId
     ) {
-        return ResponseEntity.ok(quizRoomService.updateStatus(roomId, start));
+        return ResponseEntity.ok(
+                quizRoomService.startGame(roomId, userId)
+        );
+    }
+
+    /** 방 종료 (호스트만) */
+    @PutMapping("/{roomId}/finish")
+    public ResponseEntity<QuizRoomResponse> finish(
+            @PathVariable Long roomId,
+            @LoginUser Long userId
+    ) {
+        return ResponseEntity.ok(
+                quizRoomService.finishGame(roomId, userId)
+        );
     }
 
     @DeleteMapping("/{roomId}")
-    public ResponseEntity<QuizRoomResponse> delete(
+    public ResponseEntity<Void> delete(
         @RequestParam("roomId") Long roomId
     ) {
         quizRoomService.deleteRoom(roomId);

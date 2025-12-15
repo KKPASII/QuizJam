@@ -1,5 +1,7 @@
 package com.hamplz.quizjam.quizroom.entity;
 
+import com.hamplz.quizjam.exception.ErrorCode;
+import com.hamplz.quizjam.exception.ForbiddenException;
 import com.hamplz.quizjam.value.Participants;
 import jakarta.persistence.*;
 
@@ -55,9 +57,21 @@ public class QuizRoom {
         participants.add(anonymous);
     }
 
-    public void start() { this.status = QuizRoomStatus.IN_PROGRESS; }
+    public void start(Long requestUserId) {
+        validateHost(requestUserId);
+        this.status = this.status.start();
+    }
 
-    public void finish() { this.status = QuizRoomStatus.FINISHED; }
+    public void finish(Long requestUserId) {
+        validateHost(requestUserId);
+        this.status = this.status.finish();
+    }
+
+    private void validateHost(Long requestUserId) {
+        if (this.hostUserId != requestUserId) {
+            throw new ForbiddenException(ErrorCode.QUIZ_ROOM_HOST_ONLY);
+        }
+    }
 
     public int countParticipants() {
         return participants.size();

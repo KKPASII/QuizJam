@@ -15,9 +15,6 @@ public class User {
     @Column(unique = true)
     private Long kakaoId;
 
-//    @OneToMany(mappedBy = "user")
-//    private List<QuizSession> sessions = new ArrayList<>();
-
     protected User() {}
 
     public User(String nickname, Long kakaoId) {

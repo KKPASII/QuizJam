@@ -27,6 +27,7 @@ public class QuizRoomSerivce {
         this.quizRepository = quizRepository;
     }
 
+    /** ✅ 호스트 방 생성 (로그인 필수) */
     public QuizRoomResponse createRoom(Long userId, Long quizId) {
         User host = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
@@ -34,22 +35,19 @@ public class QuizRoomSerivce {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new IllegalArgumentException("퀴즈 없음"));
 
-        String inviteCode = generateInviteCode();
-
-        QuizRoom room = QuizRoom.create(quizId, userId, host.getNickname(), inviteCode);
+        QuizRoom room = QuizRoom.create(quizId, userId, host.getNickname(), generateInviteCode());
 
         quizRoomRepository.save(room);
 
         return QuizRoomResponse.from(room);
     }
 
+    /** ✅ 익명 참가 */
     public QuizRoomResponse join(String inviteCode, String nickname) {
         QuizRoom room = quizRoomRepository.findByInviteCode(inviteCode)
                 .orElseThrow(() -> new IllegalArgumentException("방 없음"));
 
         room.joinAnonymous(nickname);
-
-        quizRoomRepository.save(room);
 
         return QuizRoomResponse.from(room);
     }
@@ -61,13 +59,19 @@ public class QuizRoomSerivce {
         return QuizRoomResponse.from(room);
     }
 
-    public QuizRoomResponse updateStatus(Long roomId, boolean start) {
+    public QuizRoomResponse startGame(Long roomId, Long requestUserId) {
         QuizRoom room = quizRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방 없음"));
 
-        if (start) room.start();
-        else room.finish();
+        room.start(requestUserId);
+        return QuizRoomResponse.from(room);
+    }
 
+    public QuizRoomResponse finishGame(Long roomId, Long requestUserId) {
+        QuizRoom room = quizRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("방 없음"));
+
+        room.finish(requestUserId);
         return QuizRoomResponse.from(room);
     }
 

@@ -21,9 +21,12 @@ public enum ErrorCode {
     FAIL_REQUEST_OPENAI(HttpStatus.BAD_GATEWAY, "[OpenAI] API 요청 실패"),
     INCORRECT_QUIZ_DATA(HttpStatus.CONFLICT, "[Quiz] Q/A 개수 불일치"),
 
-
     // 퀴즈룸
-    QUIZ_ROOM_FULL(HttpStatus.BAD_REQUEST, "[QuizRoom] 퀴즈룸 정원이 초과되었습니다.");
+    QUIZ_ROOM_FULL(HttpStatus.BAD_REQUEST, "[QuizRoom] 퀴즈룸 정원이 초과되었습니다."),
+    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "[QuizRoom] 이미 사용 중인 닉네임입니다."),
+    QUIZ_ROOM_HOST_ONLY(HttpStatus.FORBIDDEN, "[QuizRoom] 호스트만 상태를 변경할 수 있습니다."),
+    QUIZ_ROOM_ALREADY_STARTED(HttpStatus.CONFLICT, "[QuizRoom] 이미 시작된 방입니다."),
+    QUIZ_ROOM_NOT_IN_PROGRESS(HttpStatus.CONFLICT, "[QuizRoom] 진행 중인 방이 아닙니다.");
 
     private final HttpStatus status;
     private final String message;
