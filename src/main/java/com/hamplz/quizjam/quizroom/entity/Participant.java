@@ -1,6 +1,5 @@
 package com.hamplz.quizjam.quizroom.entity;
 
-import com.hamplz.quizjam.user.User;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,8 +9,8 @@ public class Participant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User user; // null이면 익명 참여자
+    @Column(nullable = true)
+    private Long userId; // null이면 익명 참여자
 
     @Column(nullable = false)
     private String nickname;
@@ -20,33 +19,42 @@ public class Participant {
     @JoinColumn(name = "room_id", nullable = false)
     private QuizRoom room;
 
+    @Column(nullable = false)
     private boolean host;
 
     protected Participant() {}
 
-    private Participant(String nickname, User user, boolean host) {
+    private Participant(Long userId, String nickname,  boolean host) {
+        this.userId = userId;
         this.nickname = nickname;
-        this.user = user;
         this.host = host;
     }
 
-    public static Participant joinAsHost(User user) {
-        return new Participant(user.getNickname(), user, true);
+    public static Participant host(Long userId, String nickname) {
+        return new Participant(userId, nickname, true);
     }
 
-    public static Participant joinAsAnonymous(String nickname) {
-        return new Participant(nickname, null, false);
+    public static Participant anonymous(String nickname) {
+        return new Participant(null, nickname, false);
     }
 
-    public void assignTo(QuizRoom room) {
+    public void assignRoom(QuizRoom room) {
         this.room = room;
-    }
-
-    public String getNickname() {
-        return nickname;
     }
 
     public boolean isHost() {
         return this.host;
+    }
+
+    public boolean isAnonymous() {
+        return userId == null;
+    }
+
+    public Long getHostId() {
+        return this.userId;
+    }
+
+    public String getNickname() {
+        return nickname;
     }
 }

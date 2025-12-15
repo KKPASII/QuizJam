@@ -19,8 +19,11 @@ public enum ErrorCode {
     INVALID_QUIZ_PARSE(HttpStatus.INTERNAL_SERVER_ERROR, "[Quiz] JSON 파싱에 실패했습니다."),
     INVALID_FILE(HttpStatus.BAD_REQUEST, "[File] PDF 읽기 실패"),
     FAIL_REQUEST_OPENAI(HttpStatus.BAD_GATEWAY, "[OpenAI] API 요청 실패"),
-    INCORRECT_QUIZ_DATA(HttpStatus.CONFLICT, "[Quiz] Q/A 개수 불일치");
+    INCORRECT_QUIZ_DATA(HttpStatus.CONFLICT, "[Quiz] Q/A 개수 불일치"),
 
+
+    // 퀴즈룸
+    QUIZ_ROOM_FULL(HttpStatus.BAD_REQUEST, "[QuizRoom] 퀴즈룸 정원이 초과되었습니다.");
 
     private final HttpStatus status;
     private final String message;

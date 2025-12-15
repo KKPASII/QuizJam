@@ -1,35 +1,54 @@
 package com.hamplz.quizjam.quizroom.controller;
 
 import com.hamplz.quizjam.auth.controller.LoginUser;
+import com.hamplz.quizjam.quizroom.dto.CreateRoomRequest;
+import com.hamplz.quizjam.quizroom.dto.JoinRequest;
 import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import com.hamplz.quizjam.quizroom.service.QuizRoomSerivce;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/quizRoom")
+@RequestMapping("/api/rooms")
 public class QuizRoomController {
-    private final QuizRoomSerivce quizRoomSerivce;
+    private final QuizRoomSerivce quizRoomService;
 
-    public QuizRoomController(QuizRoomSerivce quizRoomSerivce) {
-        this.quizRoomSerivce = quizRoomSerivce;
+    public QuizRoomController(QuizRoomSerivce quizRoomService) {
+        this.quizRoomService = quizRoomService;
     }
 
+    /** 방 생성 */
     @PostMapping
     public ResponseEntity<QuizRoomResponse> create(
-        @LoginUser Long userId
+        @LoginUser Long userId,
+        CreateRoomRequest createRoomRequest
     ) {
+        quizRoomService.createRoom(userId, createRoomRequest.quizId());
         return null;
     }
 
-    @GetMapping("/{roomId}")
-    public ResponseEntity<QuizRoomResponse> get(
-        @RequestParam("roomId") Long id
+    /** inviteCode로 방 조회 */
+    @GetMapping("/code/{inviteCode}")
+    public ResponseEntity<QuizRoomResponse> getByInviteCode(
+            @PathVariable String inviteCode
     ) {
-        return null;
+        return ResponseEntity.ok(
+                quizRoomService.getRoomByInviteCode(inviteCode)
+        );
     }
 
-    @PutMapping("/{roomId}")
+    /** 익명 참가자 입장 */
+    @PostMapping("/join")
+    public ResponseEntity<QuizRoomResponse> join(
+            @RequestBody JoinRequest request
+    ) {
+        return ResponseEntity.ok(
+                quizRoomService.join(request.inviteCode(), request.nickname())
+        );
+    }
+
+    /** 방 퀴즈 변경 */
+    @PutMapping("/{roomId}/quiz")
     public ResponseEntity<QuizRoomResponse> update(
         @RequestParam("roomId") Long id
     ) {
@@ -46,12 +65,9 @@ public class QuizRoomController {
 
     @DeleteMapping("/{roomId}")
     public ResponseEntity<QuizRoomResponse> delete(
-        @RequestParam("roomId") Long id
+        @RequestParam("roomId") Long roomId
     ) {
         quizRoomService.deleteRoom(roomId);
         return ResponseEntity.noContent().build();
     }
-
-
-    //TODO: 퀴즈룸 생성, 조회, 삭제 만들기
 }

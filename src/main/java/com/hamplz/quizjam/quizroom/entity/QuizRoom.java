@@ -1,7 +1,5 @@
 package com.hamplz.quizjam.quizroom.entity;
 
-import com.hamplz.quizjam.quiz.entity.Quiz;
-import com.hamplz.quizjam.user.User;
 import com.hamplz.quizjam.value.Participants;
 import jakarta.persistence.*;
 
@@ -18,12 +16,11 @@ public class QuizRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    private Quiz quiz;
+    @Column(nullable = false)
+    private Long quizId; // 🔥 Quiz 객체 대신 ID만
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_user_id", nullable = false)
-    private User hostUser;
+    @Column(nullable = false)
+    private Long hostUserId;
 
     @Column(unique = true, nullable = false, length = 10)
     private String inviteCode;
@@ -36,44 +33,47 @@ public class QuizRoom {
 
     protected QuizRoom() {}
 
-    public static QuizRoom create(Quiz quiz, User hostUser, String inviteCode) {
-        QuizRoom room = new QuizRoom();
-        room.quiz = quiz;
-        room.hostUser = hostUser;
-        room.inviteCode = inviteCode;
+    private QuizRoom(Long quizId, Long hostUserId, String inviteCode) {
+        this.quizId = quizId;
+        this.hostUserId = hostUserId;
+        this.inviteCode = inviteCode;
+    }
+
+    public static QuizRoom create(Long quizId, Long hostUserId, String hostNickname, String inviteCode) {
+        QuizRoom room = new QuizRoom(quizId, hostUserId, inviteCode);
+
+        Participant host = room.participants.createHost(hostUserId, hostNickname);
+        host.assignRoom(room);
+        room.participants.add(host);
+
         return room;
     }
 
-    public Participant join(String nickname, User user) {
-        Participant p = participants.isEmpty()
-            ? Participant.joinAsHost(user)
-            : (user == null ? Participant.joinAsAnonymous(nickname) : Participant.joinAsAnonymous(user.getNickname()));
-
-        p.assignTo(this);
-        participants.add(p);
-
-        return p;
-    }
-
-    public int countParticipants() {
-        return participants.size();
-    }
-
-    public Participant getHostParticipant() {
-        return participants.getHost();
-    }
-
-    public List<Participant> getParticipantList() {
-        return participants.getValues();
+    public void joinAnonymous(String nickname) {
+        Participant anonymous = Participant.anonymous(nickname);
+        anonymous.assignRoom(this);
+        participants.add(anonymous);
     }
 
     public void start() { this.status = QuizRoomStatus.IN_PROGRESS; }
 
     public void finish() { this.status = QuizRoomStatus.FINISHED; }
 
+    public int countParticipants() {
+        return participants.size();
+    }
+
     public Long getId() { return id; }
-    public Long getQuizId() { return quiz.getId(); }
-    public Long getHostUserId() { return hostUser.getId(); }
+    public Long getQuizId() { return quizId; }
+    public Long getHostUserId() { return hostUserId; }
     public String getInviteCode() { return inviteCode; }
     public QuizRoomStatus getStatus() { return status; }
+
+    public Participant getHostParticipant() {
+        return participants.getHost();
+    }
+
+    public List<Participant> getParticipants() {
+        return participants.getValues();
+    }
 }

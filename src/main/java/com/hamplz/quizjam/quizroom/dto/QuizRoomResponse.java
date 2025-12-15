@@ -17,7 +17,7 @@ public record QuizRoomResponse(
             room.getQuizId(),
             room.getInviteCode(),
             room.getHostUserId(),
-            room.getParticipantList().stream()
+            room.getParticipants().stream()
                 .map(p -> p.getNickname())
                 .toList()
         );
