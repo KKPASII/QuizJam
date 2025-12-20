@@ -68,7 +68,7 @@ public class QuizRoom {
     }
 
     private void validateHost(Long requestUserId) {
-        if (this.hostUserId != requestUserId) {
+        if (!this.hostUserId.equals(requestUserId)) {
             throw new ForbiddenException(ErrorCode.QUIZ_ROOM_HOST_ONLY);
         }
     }

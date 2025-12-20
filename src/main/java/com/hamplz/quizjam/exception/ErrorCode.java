@@ -26,7 +26,10 @@ public enum ErrorCode {
     NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "[QuizRoom] 이미 사용 중인 닉네임입니다."),
     QUIZ_ROOM_HOST_ONLY(HttpStatus.FORBIDDEN, "[QuizRoom] 호스트만 상태를 변경할 수 있습니다."),
     QUIZ_ROOM_ALREADY_STARTED(HttpStatus.CONFLICT, "[QuizRoom] 이미 시작된 방입니다."),
-    QUIZ_ROOM_NOT_IN_PROGRESS(HttpStatus.CONFLICT, "[QuizRoom] 진행 중인 방이 아닙니다.");
+    QUIZ_ROOM_NOT_IN_PROGRESS(HttpStatus.CONFLICT, "[QuizRoom] 진행 중인 방이 아닙니다."),
+
+    // 퀴즈 플레이
+    SCORE_NOT_POSITIVE(HttpStatus.BAD_REQUEST, "[QuizPlay] 퀴즈 점수는 양수이어야 합니다.");
 
     private final HttpStatus status;
     private final String message;

@@ -1,5 +1,6 @@
 package com.hamplz.quizjam.quizroom.entity;
 
+import com.hamplz.quizjam.value.Score;
 import jakarta.persistence.*;
 
 @Entity
@@ -21,6 +22,9 @@ public class Participant {
 
     @Column(nullable = false)
     private boolean host;
+
+    @Embedded
+    private Score score = Score.zero(); // 누적 점수
 
     protected Participant() {}
 
@@ -56,5 +60,9 @@ public class Participant {
 
     public String getNickname() {
         return nickname;
+    }
+
+    public void calculateScore(int score) {
+        this.score.add(score);
     }
 }
