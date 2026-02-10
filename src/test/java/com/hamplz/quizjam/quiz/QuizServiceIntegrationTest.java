@@ -268,11 +268,11 @@ public class QuizServiceIntegrationTest {
 
 
     @Test
-    @DisplayName("주관식 퀴즈 생성 테스트")
+    @DisplayName("단답식 퀴즈 생성 테스트")
     void generateQuizFromPdf_subjectiveType(@TempDir Path tempDir) throws Exception {
         // given
         QuizCreateFormat quizCreateFormat = new QuizCreateFormat(
-            "Java Subjective Quiz", "주관식", "쉬움", "3", "180"
+            "Java Subjective Quiz", "단답식", "쉬움", "3", "180"
         );
 
         String pdfText = """
@@ -297,7 +297,7 @@ public class QuizServiceIntegrationTest {
         assertThat(result.questions()).hasSize(3);
         assertThat(result.answers()).hasSize(3);
 
-        // 주관식은 options가 null이어야 함
+        // 단답식은 options가 null이어야 함
         result.questions().forEach(q -> {
             assertThat(q.options()).isNull();
             assertThat(q.questionText()).isNotBlank();
