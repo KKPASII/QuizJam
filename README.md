@@ -50,6 +50,24 @@ QuizJam은 PDF 문서를 기반으로 AI가 퀴즈를 자동 생성하고,
 - **AI**: OpenAI API
 - **PDF 처리**: Apache PDFBox
 
+## 🛠 기술 스택
+
+### ⚙️ Language / Backend
+![Java](https://img.shields.io/badge/Java_17-007396?style=for-the-badge&logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+
+### 🗄️ Database / ORM
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![H2](https://img.shields.io/badge/H2-09476B?style=for-the-badge&logo=h2&logoColor=white)
+![JPA](https://img.shields.io/badge/Spring_Data_JPA-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+
+### 🔐 Auth
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+
+### 🤖 AI / PDF
+![OpenAI](https://img.shields.io/badge/OpenAI_API-412991?style=for-the-badge&logo=openai&logoColor=white)
+![PDFBox](https://img.shields.io/badge/Apache_PDFBox-D22128?style=for-the-badge&logo=apache&logoColor=white)
+
 ---
 
 ## ⚡ 트러블슈팅(?)
