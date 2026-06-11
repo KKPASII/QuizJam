@@ -62,6 +62,24 @@ public class GlobalExceptionHandler {
             .body(error);
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, String>> handleForbiddenException(ForbiddenException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getErrorCode().getMessage());
+        return ResponseEntity
+            .status(ex.getErrorCode().getStatus())
+            .body(error);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, String>> handleConflictException(ConflictException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getErrorCode().getMessage());
+        return ResponseEntity
+            .status(ex.getErrorCode().getStatus())
+            .body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllUnexpectedException(Exception ex) {
         Map<String, String> error = new HashMap<>();

@@ -1,7 +1,15 @@
 package com.hamplz.quizjam.quizroom.entity;
 
 import com.hamplz.quizjam.value.Score;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Participant {
@@ -11,9 +19,9 @@ public class Participant {
     private Long id;
 
     @Column(nullable = true)
-    private Long userId; // null이면 익명 참여자
+    private Long userId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String nickname;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -24,11 +32,12 @@ public class Participant {
     private boolean host;
 
     @Embedded
-    private Score score = Score.zero(); // 누적 점수
+    private Score score = Score.zero();
 
-    protected Participant() {}
+    protected Participant() {
+    }
 
-    private Participant(Long userId, String nickname,  boolean host) {
+    private Participant(Long userId, String nickname, boolean host) {
         this.userId = userId;
         this.nickname = nickname;
         this.host = host;
@@ -54,15 +63,27 @@ public class Participant {
         return userId == null;
     }
 
-    public Long getHostId() {
-        return this.userId;
+    public void calculateScore(int score) {
+        this.score.add(score);
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public QuizRoom getRoom() {
+        return room;
     }
 
     public String getNickname() {
         return nickname;
     }
 
-    public void calculateScore(int score) {
-        this.score.add(score);
+    public int getScore() {
+        return score.getTotalScore();
     }
 }

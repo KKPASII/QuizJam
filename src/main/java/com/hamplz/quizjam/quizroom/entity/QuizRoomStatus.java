@@ -9,6 +9,11 @@ public enum QuizRoomStatus {
         public QuizRoomStatus start() {
             return IN_PROGRESS;
         }
+
+        @Override
+        public boolean canJoin() {
+            return true;
+        }
     },
     IN_PROGRESS {
         @Override
@@ -24,5 +29,9 @@ public enum QuizRoomStatus {
 
     public QuizRoomStatus finish() {
         throw new ConflictException(ErrorCode.QUIZ_ROOM_NOT_IN_PROGRESS);
+    }
+
+    public boolean canJoin() {
+        return false;
     }
 }

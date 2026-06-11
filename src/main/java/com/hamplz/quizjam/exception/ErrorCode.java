@@ -22,6 +22,7 @@ public enum ErrorCode {
     INCORRECT_QUIZ_DATA(HttpStatus.CONFLICT, "[Quiz] Q/A 개수 불일치"),
 
     // 퀴즈룸
+    QUIZ_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "[QuizRoom] 퀴즈룸을 찾을 수 없습니다."),
     QUIZ_ROOM_FULL(HttpStatus.BAD_REQUEST, "[QuizRoom] 퀴즈룸 정원이 초과되었습니다."),
     NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "[QuizRoom] 이미 사용 중인 닉네임입니다."),
     QUIZ_ROOM_HOST_ONLY(HttpStatus.FORBIDDEN, "[QuizRoom] 호스트만 상태를 변경할 수 있습니다."),
