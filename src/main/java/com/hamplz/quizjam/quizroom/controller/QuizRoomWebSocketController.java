@@ -6,6 +6,7 @@ import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import com.hamplz.quizjam.quizroom.dto.QuizStartRequest;
 import com.hamplz.quizjam.quizroom.dto.RoomEventMessage;
 import com.hamplz.quizjam.quizroom.service.ParticipantSessionRegistry;
+import com.hamplz.quizjam.quizroom.service.QuizPlayService;
 import com.hamplz.quizjam.quizroom.service.QuizRoomSerivce;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,15 +21,18 @@ import java.security.Principal;
 public class QuizRoomWebSocketController {
 
     private final QuizRoomSerivce quizRoomService;
+    private final QuizPlayService quizPlayService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ParticipantSessionRegistry participantSessionRegistry;
 
     public QuizRoomWebSocketController(
         QuizRoomSerivce quizRoomService,
+        QuizPlayService quizPlayService,
         SimpMessagingTemplate messagingTemplate,
         ParticipantSessionRegistry participantSessionRegistry
     ) {
         this.quizRoomService = quizRoomService;
+        this.quizPlayService = quizPlayService;
         this.messagingTemplate = messagingTemplate;
         this.participantSessionRegistry = participantSessionRegistry;
     }
@@ -62,6 +66,7 @@ public class QuizRoomWebSocketController {
             "/topic/room/" + room.roomId(),
             RoomEventMessage.of("ROOM_STARTED", room)
         );
+        quizPlayService.startGame(room);
     }
 
     private Long requireLoginUser(Principal principal) {

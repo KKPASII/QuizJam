@@ -38,6 +38,10 @@ public class Question {
         return new Question(quiz, questionText, options, hint);
     }
 
+    public Long getId() {
+        return this.id;
+    }
+
     public Quiz getQuiz() {
         return this.quiz;
     }
