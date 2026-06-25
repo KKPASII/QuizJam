@@ -2,6 +2,8 @@ package com.hamplz.quizjam.quizroom.controller;
 
 import com.hamplz.quizjam.quizroom.dto.JoinRequest;
 import com.hamplz.quizjam.quizroom.dto.JoinRoomResponse;
+import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
+import com.hamplz.quizjam.quizroom.dto.QuizStartRequest;
 import com.hamplz.quizjam.quizroom.dto.RoomEventMessage;
 import com.hamplz.quizjam.quizroom.service.ParticipantSessionRegistry;
 import com.hamplz.quizjam.quizroom.service.QuizRoomSerivce;
@@ -11,6 +13,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
 
 @Controller
 public class QuizRoomWebSocketController {
@@ -44,5 +48,26 @@ public class QuizRoomWebSocketController {
         );
 
         return response;
+    }
+
+    @MessageMapping("room.start")
+    public void startRoom(
+        @Payload QuizStartRequest request,
+        Principal principal
+    ) {
+        Long userId = requireLoginUser(principal);
+        QuizRoomResponse room = quizRoomService.startGame(request.roomId(), userId);
+
+        messagingTemplate.convertAndSend(
+            "/topic/room/" + room.roomId(),
+            RoomEventMessage.of("ROOM_STARTED", room)
+        );
+    }
+
+    private Long requireLoginUser(Principal principal) {
+        if (principal == null || principal.getName() == null || principal.getName().startsWith("anonymous-")) {
+            throw new IllegalStateException("Login WebSocket principal is required.");
+        }
+        return Long.valueOf(principal.getName());
     }
 }
