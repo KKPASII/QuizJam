@@ -3,16 +3,19 @@ package com.hamplz.quizjam.quizroom.service;
 import com.hamplz.quizjam.quiz.entity.Question;
 import com.hamplz.quizjam.quiz.service.QuizQueryService;
 import com.hamplz.quizjam.quizroom.dto.AnswerSubmittedMessage;
+import com.hamplz.quizjam.quizroom.dto.ParticipantRankingResponse;
 import com.hamplz.quizjam.quizroom.dto.QuestionClosedMessage;
 import com.hamplz.quizjam.quizroom.dto.QuestionOpenedMessage;
 import com.hamplz.quizjam.quizroom.dto.QuestionsFinishedMessage;
 import com.hamplz.quizjam.quizroom.dto.QuizEventMessage;
+import com.hamplz.quizjam.quizroom.dto.QuizResultMessage;
 import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import jakarta.annotation.PreDestroy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 @Service
 public class QuizPlayService {
@@ -30,6 +34,7 @@ public class QuizPlayService {
     private final SimpMessagingTemplate messagingTemplate;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private final Map<Long, GameState> games = new ConcurrentHashMap<>();
+    private final Map<Long, ConcurrentMap<Long, Integer>> results = new ConcurrentHashMap<>();
 
     public QuizPlayService(
         QuizQueryService quizQueryService,
@@ -49,6 +54,7 @@ public class QuizPlayService {
         if (previous != null) {
             previous.cancelTimer();
         }
+        results.remove(room.roomId());
 
         broadcast(room.roomId(), QuizEventMessage.of("QUIZ_STARTED", Map.of(
             "roomId", room.roomId(),
@@ -89,6 +95,34 @@ public class QuizPlayService {
             participantId,
             state.submissions.size()
         )));
+    }
+
+    public void submitResult(QuizRoomResponse room, Long participantId, int score) {
+        if (score < 0) {
+            throw new IllegalArgumentException("Score must be zero or positive.");
+        }
+        if (!isRoomParticipant(room, participantId)) {
+            throw new IllegalStateException("Participant is not in requested room.");
+        }
+
+        ConcurrentMap<Long, Integer> roomResults = results.computeIfAbsent(room.roomId(), ignored -> new ConcurrentHashMap<>());
+        Integer previous = roomResults.putIfAbsent(participantId, score);
+        if (previous != null) {
+            throw new IllegalStateException("Participant already submitted result.");
+        }
+
+        int expectedCount = room.participants().size();
+        int submittedCount = roomResults.size();
+        boolean finalized = submittedCount >= expectedCount;
+        QuizResultMessage message = new QuizResultMessage(
+            room.roomId(),
+            submittedCount,
+            expectedCount,
+            finalized,
+            buildRankings(room, roomResults)
+        );
+
+        broadcast(room.roomId(), QuizEventMessage.of(finalized ? "RESULT_FINALIZED" : "RESULT_UPDATED", message));
     }
 
     public void forceFinish(Long roomId) {
@@ -174,6 +208,39 @@ public class QuizPlayService {
         messagingTemplate.convertAndSend("/topic/quiz/" + roomId, message);
     }
 
+    private boolean isRoomParticipant(QuizRoomResponse room, Long participantId) {
+        return room.participants().stream()
+            .anyMatch(participant -> Objects.equals(participant.participantId(), participantId));
+    }
+
+    private List<ParticipantRankingResponse> buildRankings(
+        QuizRoomResponse room,
+        ConcurrentMap<Long, Integer> roomResults
+    ) {
+        List<ParticipantScore> scores = room.participants().stream()
+            .map(participant -> new ParticipantScore(
+                participant.participantId(),
+                participant.nickname(),
+                roomResults.getOrDefault(participant.participantId(), 0)
+            ))
+            .sorted(Comparator
+                .comparingInt(ParticipantScore::score).reversed()
+                .thenComparing(ParticipantScore::participantId, Comparator.nullsLast(Long::compareTo)))
+            .toList();
+
+        return IntStream.range(0, scores.size())
+            .mapToObj(index -> {
+                ParticipantScore score = scores.get(index);
+                return new ParticipantRankingResponse(
+                    index + 1,
+                    score.participantId(),
+                    score.nickname(),
+                    score.score()
+                );
+            })
+            .toList();
+    }
+
     private String normalizeAnswer(String answer) {
         return answer == null ? "" : answer.trim();
     }
@@ -215,6 +282,13 @@ public class QuizPlayService {
         Long participantId,
         String answer,
         long submittedAtEpochMs
+    ) {
+    }
+
+    private record ParticipantScore(
+        Long participantId,
+        String nickname,
+        int score
     ) {
     }
 }
