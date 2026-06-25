@@ -96,6 +96,14 @@ public class QuizRoom {
         this.status = this.status.finish();
     }
 
+    public void leaveParticipant(Long participantId) {
+        participants.getValues().stream()
+            .filter(participant -> participant.getId() != null)
+            .filter(participant -> participant.getId().equals(participantId))
+            .findFirst()
+            .ifPresent(Participant::leave);
+    }
+
     private void ensureCanJoin() {
         if (!this.status.canJoin()) {
             throw new ConflictException(ErrorCode.QUIZ_ROOM_ALREADY_STARTED);

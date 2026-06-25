@@ -7,6 +7,7 @@ public record ParticipantResponse(
     Long userId,
     String nickname,
     boolean host,
+    boolean online,
     int score
 ) {
     public static ParticipantResponse from(Participant participant) {
@@ -15,6 +16,7 @@ public record ParticipantResponse(
             participant.getUserId(),
             participant.getNickname(),
             participant.isHost(),
+            participant.isOnline(),
             participant.getScore()
         );
     }

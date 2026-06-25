@@ -111,6 +111,23 @@ public class QuizRoomWebSocketController {
         quizPlayService.submitResult(room, participantId, request.score());
     }
 
+    @MessageMapping("room.leave")
+    public void leaveRoom(@Header("simpSessionId") String sessionId) {
+        Long participantId = participantSessionRegistry.getParticipantId(sessionId);
+        Long roomId = participantSessionRegistry.getRoomId(sessionId);
+        participantSessionRegistry.remove(sessionId);
+
+        if (participantId == null || roomId == null) {
+            return;
+        }
+
+        QuizRoomResponse room = quizRoomService.leave(roomId, participantId);
+        messagingTemplate.convertAndSend(
+            "/topic/room/" + roomId,
+            RoomEventMessage.of("ROOM_SNAPSHOT", room)
+        );
+    }
+
     private Long requireLoginUser(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().startsWith("anonymous-")) {
             throw new IllegalStateException("Login WebSocket principal is required.");

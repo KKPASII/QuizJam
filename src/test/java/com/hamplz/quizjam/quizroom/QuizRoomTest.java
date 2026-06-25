@@ -7,6 +7,7 @@ import com.hamplz.quizjam.quizroom.entity.QuizRoom;
 import com.hamplz.quizjam.quizroom.entity.QuizRoomStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,5 +66,17 @@ class QuizRoomTest {
 
         assertThatThrownBy(() -> room.joinAnonymous("guest"))
             .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("leaving participant is marked offline")
+    void markParticipantOfflineWhenLeave() {
+        QuizRoom room = QuizRoom.create(1L, 10L, "host", "ABCDEFGH", 20);
+        Participant participant = room.joinAnonymous("guest");
+        ReflectionTestUtils.setField(participant, "id", 20L);
+
+        room.leaveParticipant(participant.getId());
+
+        assertThat(participant.isOnline()).isFalse();
     }
 }

@@ -106,6 +106,13 @@ public class QuizRoomSerivce {
     }
 
     @Transactional
+    public QuizRoomResponse leave(Long roomId, Long participantId) {
+        QuizRoom room = findRoom(roomId);
+        room.leaveParticipant(participantId);
+        return QuizRoomResponse.from(room);
+    }
+
+    @Transactional
     public void deleteRoom(Long roomId, Long requestUserId) {
         QuizRoom room = findRoom(roomId);
         if (!room.getHostUserId().equals(requestUserId)) {

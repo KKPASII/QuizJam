@@ -31,6 +31,9 @@ public class Participant {
     @Column(nullable = false)
     private boolean host;
 
+    @Column(nullable = false)
+    private boolean online = true;
+
     @Embedded
     private Score score = Score.zero();
 
@@ -63,6 +66,10 @@ public class Participant {
         return userId == null;
     }
 
+    public void leave() {
+        this.online = false;
+    }
+
     public void calculateScore(int score) {
         this.score.add(score);
     }
@@ -81,6 +88,10 @@ public class Participant {
 
     public String getNickname() {
         return nickname;
+    }
+
+    public boolean isOnline() {
+        return online;
     }
 
     public int getScore() {
