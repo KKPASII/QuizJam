@@ -2,6 +2,7 @@ package com.hamplz.quizjam.quizroom.service;
 
 import com.hamplz.quizjam.quiz.entity.Question;
 import com.hamplz.quizjam.quiz.service.QuizQueryService;
+import com.hamplz.quizjam.quizroom.dto.AnswerSubmittedMessage;
 import com.hamplz.quizjam.quizroom.dto.QuestionClosedMessage;
 import com.hamplz.quizjam.quizroom.dto.QuestionOpenedMessage;
 import com.hamplz.quizjam.quizroom.dto.QuestionsFinishedMessage;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -56,6 +59,38 @@ public class QuizPlayService {
         openQuestion(room.roomId());
     }
 
+    public void submitAnswer(Long roomId, Long participantId, Long questionId, String answer) {
+        GameState state = games.get(roomId);
+        if (state == null) {
+            throw new IllegalStateException("Quiz is not in progress.");
+        }
+
+        Question currentQuestion = state.currentQuestion();
+        if (currentQuestion == null) {
+            throw new IllegalStateException("No open question.");
+        }
+        if (!Objects.equals(currentQuestion.getId(), questionId)) {
+            throw new IllegalStateException("Submitted question is not current question.");
+        }
+        if (Instant.now().toEpochMilli() > state.deadlineEpochMs) {
+            throw new IllegalStateException("Question deadline has passed.");
+        }
+
+        SubmissionSnapshot submission = new SubmissionSnapshot(participantId, normalizeAnswer(answer), Instant.now().toEpochMilli());
+        SubmissionSnapshot previous = state.submissions.putIfAbsent(participantId, submission);
+        if (previous != null) {
+            throw new IllegalStateException("Participant already submitted this question.");
+        }
+
+        broadcast(roomId, QuizEventMessage.of("ANSWER_SUBMITTED", new AnswerSubmittedMessage(
+            roomId,
+            state.questionIndex,
+            questionId,
+            participantId,
+            state.submissions.size()
+        )));
+    }
+
     public void forceFinish(Long roomId) {
         GameState state = games.remove(roomId);
         if (state != null) {
@@ -75,10 +110,12 @@ public class QuizPlayService {
             return;
         }
 
+        state.submissions.clear();
         Question question = state.questions.get(state.questionIndex);
         long deadlineEpochMs = Instant.now()
             .plusSeconds(state.room.questionTimeLimitSeconds())
             .toEpochMilli();
+        state.deadlineEpochMs = deadlineEpochMs;
 
         broadcast(roomId, QuizEventMessage.of("QUESTION_OPENED", new QuestionOpenedMessage(
             roomId,
@@ -137,6 +174,10 @@ public class QuizPlayService {
         messagingTemplate.convertAndSend("/topic/quiz/" + roomId, message);
     }
 
+    private String normalizeAnswer(String answer) {
+        return answer == null ? "" : answer.trim();
+    }
+
     @PreDestroy
     public void shutdown() {
         scheduler.shutdownNow();
@@ -145,12 +186,21 @@ public class QuizPlayService {
     private static class GameState {
         private final QuizRoomResponse room;
         private final List<Question> questions;
+        private final ConcurrentMap<Long, SubmissionSnapshot> submissions = new ConcurrentHashMap<>();
         private int questionIndex;
+        private long deadlineEpochMs;
         private ScheduledFuture<?> timer;
 
         private GameState(QuizRoomResponse room, List<Question> questions) {
             this.room = room;
             this.questions = questions;
+        }
+
+        private Question currentQuestion() {
+            if (questionIndex < 0 || questionIndex >= questions.size()) {
+                return null;
+            }
+            return questions.get(questionIndex);
         }
 
         private void cancelTimer() {
@@ -159,5 +209,12 @@ public class QuizPlayService {
                 timer = null;
             }
         }
+    }
+
+    private record SubmissionSnapshot(
+        Long participantId,
+        String answer,
+        long submittedAtEpochMs
+    ) {
     }
 }

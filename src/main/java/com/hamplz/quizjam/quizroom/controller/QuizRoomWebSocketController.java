@@ -4,6 +4,7 @@ import com.hamplz.quizjam.quizroom.dto.JoinRequest;
 import com.hamplz.quizjam.quizroom.dto.JoinRoomResponse;
 import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import com.hamplz.quizjam.quizroom.dto.QuizStartRequest;
+import com.hamplz.quizjam.quizroom.dto.QuizSubmitRequest;
 import com.hamplz.quizjam.quizroom.dto.RoomEventMessage;
 import com.hamplz.quizjam.quizroom.service.ParticipantSessionRegistry;
 import com.hamplz.quizjam.quizroom.service.QuizPlayService;
@@ -67,6 +68,28 @@ public class QuizRoomWebSocketController {
             RoomEventMessage.of("ROOM_STARTED", room)
         );
         quizPlayService.startGame(room);
+    }
+
+    @MessageMapping("quiz.submit")
+    public void submitAnswer(
+        @Payload QuizSubmitRequest request,
+        @Header("simpSessionId") String sessionId
+    ) {
+        Long participantId = participantSessionRegistry.getParticipantId(sessionId);
+        Long registeredRoomId = participantSessionRegistry.getRoomId(sessionId);
+        if (participantId == null || registeredRoomId == null) {
+            throw new IllegalStateException("Participant session is not registered.");
+        }
+        if (!registeredRoomId.equals(request.roomId())) {
+            throw new IllegalStateException("Participant is not registered in requested room.");
+        }
+
+        quizPlayService.submitAnswer(
+            request.roomId(),
+            participantId,
+            request.questionId(),
+            request.answer()
+        );
     }
 
     private Long requireLoginUser(Principal principal) {
