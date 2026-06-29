@@ -1,9 +1,4 @@
 spring:
-  config:
-    import: optional:classpath:application-secret.yml
-  activate:
-    on-profile: dev
-
   application:
     name: QuizJam
 
@@ -36,6 +31,12 @@ spring:
     properties:
       hibernate:
         format_sql: true           # SQL 예쁘게 출력
+        # ✅ Batch Insert 활성화
+        #jdbc:
+        #  batch_size: 50          # 한 번에 50개씩 insert (문항이 많을 경우 효과적)
+        #order_inserts: true       # insert 쿼리 순서 정렬 → batch 효율 향상
+        #order_updates: true       # update 시에도 정렬 (옵션)
+        #generate_statistics: false # 성능 통계 off (원하면 true로 모니터링 가능)
 
   security:
     oauth2:
@@ -44,7 +45,7 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: "http://localhost:8081/kakao/callback"
+            redirect-uri: "http://localhost:8081/api/kakao/callback"
             authorization-grant-type: authorization_code
             scope:
               - profile_nickname

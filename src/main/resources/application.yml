@@ -1,9 +1,4 @@
 spring:
-  config:
-    import: optional:classpath:application-secret.yml
-  activate:
-    on-profile: dev
-
   application:
     name: QuizJam
 
@@ -36,13 +31,7 @@ spring:
     open-in-view: false
     properties:
       hibernate:
-        format_sql: true           # SQL 예쁘게 출력
-        # ✅ Batch Insert 활성화
-        #jdbc:
-        #  batch_size: 50          # 한 번에 50개씩 insert (문항이 많을 경우 효과적)
-        #order_inserts: true       # insert 쿼리 순서 정렬 → batch 효율 향상
-        #order_updates: true       # update 시에도 정렬 (옵션)
-        #generate_statistics: false # 성능 통계 off (원하면 true로 모니터링 가능)
+        format_sql: true
 
   security:
     oauth2:
@@ -75,7 +64,7 @@ jwt:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG  # SQL 쿼리
+    org.hibernate.SQL: DEBUG
     com.hamplz.quizjam: DEBUG
     org.springframework.web.client: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
