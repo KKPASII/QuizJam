@@ -39,7 +39,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 1️⃣ 토큰 추출 (HttpOnly 쿠키)
             String token = jwtUtil.extractAccessToken(request);
-            log.info("📦 Extracted token: {}", token);
             // 2️⃣ AuthService에 검증 위임
             UsernamePasswordAuthenticationToken authentication =
                 authService.authenticateToken(token);
