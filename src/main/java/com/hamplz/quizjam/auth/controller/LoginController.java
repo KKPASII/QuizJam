@@ -83,25 +83,36 @@ public class LoginController {
         String refreshToken = jwtUtil.extractRefreshToken(request);
         AuthToken newTokens = refreshTokenService.newTokenSet(refreshToken);
 
-        CookieUtil.setAccessTokenCookie(response, newTokens.accessToken());
-        CookieUtil.setRefreshTokenCookie(response, newTokens.refreshToken());
+        cookieUtil.setAccessTokenCookie(response, newTokens.accessToken());
+        cookieUtil.setRefreshTokenCookie(response, newTokens.refreshToken());
 
         return ResponseEntity.ok(new AuthTokenResponse(newTokens.accessToken()));
     }
 
     @PostMapping("/api/kakao/logout")
-    public ResponseEntity<Void> logout(
-            HttpServletRequest request,
+    public ResponseEntity<String> kakaoLogout(
             HttpServletResponse response
     ) {
-        // 카카오 로그아웃
+        clearAuthCookies(response);
+        return ResponseEntity.ok(kakaoOauthService.getKakaoLogoutUrl());
+    }
 
-        return ResponseEntity.noContent().build();
+    @GetMapping("/api/kakao/logout/callback")
+    public ResponseEntity<Void> kakaoLogoutCallback(HttpServletResponse response) {
+        clearAuthCookies(response);
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .header("Location", "http://localhost:5173/")
+            .build();
     }
 
     private ClientInfo getClientInfo(HttpServletRequest request) {
         String userAgent = request.getHeader("User-Agent");
         DeviceType deviceType = DeviceType.fromUserAgent(userAgent);
         return new ClientInfo(userAgent, deviceType);
+    }
+
+    private void clearAuthCookies(HttpServletResponse response) {
+        cookieUtil.clearCookie(response, "accessToken");
+        cookieUtil.clearCookie(response, "refreshToken");
     }
 }

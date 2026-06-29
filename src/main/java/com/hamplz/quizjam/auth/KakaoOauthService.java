@@ -15,6 +15,7 @@ import java.util.Optional;
 @Service
 public class KakaoOauthService {
     private static final String AUTHORIZATION_PATH = "https://kauth.kakao.com/oauth/authorize";
+    private static final String LOGOUT_PATH = "https://kauth.kakao.com/oauth/logout";
 
     private final KakaoApiClient kakaoApiClient;
     private final KakaoProperties kakaoProperties;
@@ -38,6 +39,17 @@ public class KakaoOauthService {
                 .toUriString();
     }
 
+    public String getKakaoLogoutUrl() {
+        validateKakaoClientId();
+        validateKakaoLogoutRedirectUri();
+
+        return UriComponentsBuilder
+                .fromUriString(LOGOUT_PATH)
+                .queryParam("client_id", kakaoProperties.clientId())
+                .queryParam("logout_redirect_uri", kakaoProperties.logoutRedirectUri())
+                .toUriString();
+    }
+
     private void validateKakaoClientId() {
         String clientId = kakaoProperties.clientId();
         if (clientId == null || clientId.isBlank()) {
@@ -47,6 +59,13 @@ public class KakaoOauthService {
             throw new IllegalStateException(
                     "KAKAO_CLIENT_ID must be the Kakao REST API key value, not a placeholder expression."
             );
+        }
+    }
+
+    private void validateKakaoLogoutRedirectUri() {
+        String logoutRedirectUri = kakaoProperties.logoutRedirectUri();
+        if (logoutRedirectUri == null || logoutRedirectUri.isBlank()) {
+            throw new IllegalStateException("Kakao logout redirect URI is required.");
         }
     }
 
