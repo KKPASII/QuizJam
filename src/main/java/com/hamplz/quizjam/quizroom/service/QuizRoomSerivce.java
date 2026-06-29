@@ -56,17 +56,17 @@ public class QuizRoomSerivce {
         );
 
         QuizRoom savedRoom = quizRoomRepository.saveAndFlush(room);
-        return QuizRoomResponse.from(savedRoom);
+        return toResponse(savedRoom);
     }
 
     @Transactional(readOnly = true)
     public QuizRoomResponse getRoom(Long roomId) {
-        return QuizRoomResponse.from(findRoom(roomId));
+        return toResponse(findRoom(roomId));
     }
 
     @Transactional(readOnly = true)
     public QuizRoomResponse getRoomByInviteCode(String inviteCode) {
-        return QuizRoomResponse.from(findRoomByInviteCode(inviteCode));
+        return toResponse(findRoomByInviteCode(inviteCode));
     }
 
     @Transactional
@@ -77,7 +77,7 @@ public class QuizRoomSerivce {
 
         QuizRoom savedRoom = quizRoomRepository.saveAndFlush(room);
         return new JoinRoomResponse(
-            QuizRoomResponse.from(savedRoom),
+            toResponse(savedRoom),
             participant.getId(),
             participant.getNickname()
         );
@@ -88,28 +88,28 @@ public class QuizRoomSerivce {
         ensureQuizOwner(userId, request.quizId());
         QuizRoom room = findRoom(roomId);
         room.updateQuiz(userId, request.quizId(), normalizeTimeLimit(request.questionTimeLimitSeconds()));
-        return QuizRoomResponse.from(room);
+        return toResponse(room);
     }
 
     @Transactional
     public QuizRoomResponse startGame(Long roomId, Long requestUserId) {
         QuizRoom room = findRoom(roomId);
         room.start(requestUserId);
-        return QuizRoomResponse.from(room);
+        return toResponse(room);
     }
 
     @Transactional
     public QuizRoomResponse finishGame(Long roomId, Long requestUserId) {
         QuizRoom room = findRoom(roomId);
         room.finish(requestUserId);
-        return QuizRoomResponse.from(room);
+        return toResponse(room);
     }
 
     @Transactional
     public QuizRoomResponse leave(Long roomId, Long participantId) {
         QuizRoom room = findRoom(roomId);
         room.leaveParticipant(participantId);
-        return QuizRoomResponse.from(room);
+        return toResponse(room);
     }
 
     @Transactional
@@ -129,6 +129,12 @@ public class QuizRoomSerivce {
     private QuizRoom findRoomByInviteCode(String inviteCode) {
         return quizRoomRepository.findByInviteCode(inviteCode)
             .orElseThrow(() -> new NotFoundException(ErrorCode.QUIZ_ROOM_NOT_FOUND));
+    }
+
+    private QuizRoomResponse toResponse(QuizRoom room) {
+        Quiz quiz = quizRepository.findById(room.getQuizId())
+            .orElseThrow(() -> new NotFoundException(ErrorCode.QUIZ_NOT_FOUND));
+        return QuizRoomResponse.from(room, quiz);
     }
 
     private void ensureQuizOwner(Long userId, Long quizId) {
