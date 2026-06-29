@@ -26,12 +26,14 @@ public class LoginController {
     private final KakaoOauthService kakaoOauthService;
     private final TokenIssuer tokenIssuer;
     private final JwtUtil jwtUtil;
+    private final CookieUtil cookieUtil;
     private final RefreshTokenService refreshTokenService;
 
-    public LoginController(JwtUtil jwtUtil, KakaoOauthService kakaoOauthService, TokenIssuer tokenIssuer, RefreshTokenService refreshTokenService) {
+    public LoginController(JwtUtil jwtUtil, KakaoOauthService kakaoOauthService, TokenIssuer tokenIssuer, CookieUtil cookieUtil, RefreshTokenService refreshTokenService) {
         this.jwtUtil = jwtUtil;
         this.kakaoOauthService = kakaoOauthService;
         this.tokenIssuer = tokenIssuer;
+        this.cookieUtil = cookieUtil;
         this.refreshTokenService = refreshTokenService;
     }
 
@@ -47,8 +49,8 @@ public class LoginController {
         HttpServletResponse response,
         @LoginUser Long userId
     ) {
-        CookieUtil.clearCookie(response, "accessToken");
-        CookieUtil.clearCookie(response, "refreshToken");
+        cookieUtil.clearCookie(response, "accessToken");
+        cookieUtil.clearCookie(response, "refreshToken");
 
         return ResponseEntity.noContent().build();
     }
@@ -65,8 +67,8 @@ public class LoginController {
 
         AuthToken tokenSet = tokenIssuer.issue(user, clientInfo.deviceType(), clientInfo.userAgent());
 
-        CookieUtil.setAccessTokenCookie(response, tokenSet.accessToken());
-        CookieUtil.setRefreshTokenCookie(response, tokenSet.refreshToken());
+        cookieUtil.setAccessTokenCookie(response, tokenSet.accessToken());
+        cookieUtil.setRefreshTokenCookie(response, tokenSet.refreshToken());
 
         return ResponseEntity.status(HttpStatus.FOUND)
             .header("Location", "http://localhost:5173/")
