@@ -27,6 +27,8 @@ public class KakaoOauthService {
     }
 
     public String getKakaoLoginUrl() {
+        validateKakaoClientId();
+
         return UriComponentsBuilder
                 .fromUriString(AUTHORIZATION_PATH)
                 .queryParam("response_type", "code")
@@ -34,6 +36,18 @@ public class KakaoOauthService {
                 .queryParam("redirect_uri", kakaoProperties.redirectUri())
                 .queryParam("scope", "profile_nickname")
                 .toUriString();
+    }
+
+    private void validateKakaoClientId() {
+        String clientId = kakaoProperties.clientId();
+        if (clientId == null || clientId.isBlank()) {
+            throw new IllegalStateException("KAKAO_CLIENT_ID environment variable is required.");
+        }
+        if (clientId.contains("${") || clientId.contains("}")) {
+            throw new IllegalStateException(
+                    "KAKAO_CLIENT_ID must be the Kakao REST API key value, not a placeholder expression."
+            );
+        }
     }
 
     /**
