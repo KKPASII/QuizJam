@@ -6,10 +6,12 @@ import com.hamplz.quizjam.quizroom.dto.QuizResultSubmitRequest;
 import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import com.hamplz.quizjam.quizroom.dto.QuizStartRequest;
 import com.hamplz.quizjam.quizroom.dto.QuizSubmitRequest;
+import com.hamplz.quizjam.quizroom.dto.RejoinRoomRequest;
 import com.hamplz.quizjam.quizroom.dto.RoomEventMessage;
 import com.hamplz.quizjam.quizroom.service.LeaveRoomResult;
 import com.hamplz.quizjam.quizroom.service.ParticipantSessionRegistry;
 import com.hamplz.quizjam.quizroom.service.QuizPlayService;
+import com.hamplz.quizjam.quizroom.service.QuizRoomCleanupService;
 import com.hamplz.quizjam.quizroom.service.QuizRoomSerivce;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -19,24 +21,26 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
-import java.util.Map;
 
 @Controller
 public class QuizRoomWebSocketController {
 
     private final QuizRoomSerivce quizRoomService;
     private final QuizPlayService quizPlayService;
+    private final QuizRoomCleanupService quizRoomCleanupService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ParticipantSessionRegistry participantSessionRegistry;
 
     public QuizRoomWebSocketController(
         QuizRoomSerivce quizRoomService,
         QuizPlayService quizPlayService,
+        QuizRoomCleanupService quizRoomCleanupService,
         SimpMessagingTemplate messagingTemplate,
         ParticipantSessionRegistry participantSessionRegistry
     ) {
         this.quizRoomService = quizRoomService;
         this.quizPlayService = quizPlayService;
+        this.quizRoomCleanupService = quizRoomCleanupService;
         this.messagingTemplate = messagingTemplate;
         this.participantSessionRegistry = participantSessionRegistry;
     }
@@ -65,12 +69,23 @@ public class QuizRoomWebSocketController {
         Principal principal
     ) {
         Long userId = requireLoginUser(principal);
-        QuizRoomResponse room = quizRoomService.getRoom(request.roomId());
-        if (!room.hostUserId().equals(userId)) {
-            throw new IllegalStateException("Only host can register host room session.");
-        }
+        QuizRoomResponse room = quizRoomService.reconnectHost(request.roomId(), userId);
+        quizRoomCleanupService.cancelCleanup(room.roomId());
 
         participantSessionRegistry.register(sessionId, room.roomId(), getHostParticipantId(room));
+        broadcastRoomSnapshot(room);
+    }
+
+    @MessageMapping("room.rejoin")
+    public void rejoinRoom(
+        @Payload RejoinRoomRequest request,
+        @Header("simpSessionId") String sessionId
+    ) {
+        QuizRoomResponse room = quizRoomService.reconnectParticipant(request.roomId(), request.participantId());
+        quizRoomCleanupService.cancelCleanup(room.roomId());
+
+        participantSessionRegistry.register(sessionId, room.roomId(), request.participantId());
+        broadcastRoomSnapshot(room);
     }
 
     @MessageMapping("room.start")
@@ -143,15 +158,11 @@ public class QuizRoomWebSocketController {
 
         LeaveRoomResult result = quizRoomService.leaveAndCloseWaitingRoomIfNeeded(roomId, participantId);
         if (result.closed()) {
-            participantSessionRegistry.removeRoom(roomId);
-            broadcastRoomClosed(roomId);
+            quizRoomCleanupService.scheduleWaitingRoomCleanup(roomId);
             return;
         }
 
-        messagingTemplate.convertAndSend(
-            "/topic/room/" + roomId,
-            RoomEventMessage.of("ROOM_SNAPSHOT", result.room())
-        );
+        broadcastRoomSnapshot(result.room());
     }
 
     private Long requireLoginUser(Principal principal) {
@@ -169,10 +180,10 @@ public class QuizRoomWebSocketController {
             .orElseThrow(() -> new IllegalStateException("Host participant is not found."));
     }
 
-    private void broadcastRoomClosed(Long roomId) {
+    private void broadcastRoomSnapshot(QuizRoomResponse room) {
         messagingTemplate.convertAndSend(
-            "/topic/room/" + roomId,
-            RoomEventMessage.of("ROOM_CLOSED", Map.of("roomId", roomId))
+            "/topic/room/" + room.roomId(),
+            RoomEventMessage.of("ROOM_SNAPSHOT", room)
         );
     }
 }

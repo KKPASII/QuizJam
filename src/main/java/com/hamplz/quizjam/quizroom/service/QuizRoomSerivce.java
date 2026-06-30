@@ -99,6 +99,20 @@ public class QuizRoomSerivce {
     }
 
     @Transactional
+    public QuizRoomResponse reconnectHost(Long roomId, Long requestUserId) {
+        QuizRoom room = findRoom(roomId);
+        room.reconnectHost(requestUserId);
+        return toResponse(room);
+    }
+
+    @Transactional
+    public QuizRoomResponse reconnectParticipant(Long roomId, Long participantId) {
+        QuizRoom room = findRoom(roomId);
+        room.reconnectParticipant(participantId);
+        return toResponse(room);
+    }
+
+    @Transactional
     public QuizRoomResponse finishGame(Long roomId, Long requestUserId) {
         QuizRoom room = findRoom(roomId);
         room.finish(requestUserId);
@@ -117,7 +131,6 @@ public class QuizRoomSerivce {
         QuizRoom room = findRoom(roomId);
         room.leaveParticipant(participantId);
         if (room.shouldCloseWaitingRoom()) {
-            quizRoomRepository.delete(room);
             return LeaveRoomResult.closed(roomId);
         }
         return LeaveRoomResult.open(toResponse(room));

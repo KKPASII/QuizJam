@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class QuizRoomCleanupService {
 
     private static final long CLEANUP_DELAY_SECONDS = 60;
+    private static final long WAITING_ROOM_CLEANUP_DELAY_SECONDS = 10;
 
     private final QuizRoomSerivce quizRoomService;
     private final ParticipantSessionRegistry participantSessionRegistry;
@@ -41,6 +42,19 @@ public class QuizRoomCleanupService {
             CLEANUP_DELAY_SECONDS,
             TimeUnit.SECONDS
         );
+        replaceCleanupTask(roomId, task);
+    }
+
+    public void scheduleWaitingRoomCleanup(Long roomId) {
+        ScheduledFuture<?> task = scheduler.schedule(
+            () -> closeRoom(roomId),
+            WAITING_ROOM_CLEANUP_DELAY_SECONDS,
+            TimeUnit.SECONDS
+        );
+        replaceCleanupTask(roomId, task);
+    }
+
+    private void replaceCleanupTask(Long roomId, ScheduledFuture<?> task) {
         ScheduledFuture<?> previous = cleanupTasks.put(roomId, task);
         if (previous != null) {
             previous.cancel(false);

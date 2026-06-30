@@ -104,6 +104,23 @@ public class QuizRoom {
             .ifPresent(Participant::leave);
     }
 
+    public void reconnectHost(Long requestUserId) {
+        validateHost(requestUserId);
+        Participant host = participants.getHost();
+        if (host != null) {
+            host.enter();
+        }
+    }
+
+    public void reconnectParticipant(Long participantId) {
+        participants.getValues().stream()
+            .filter(participant -> participant.getId() != null)
+            .filter(participant -> participant.getId().equals(participantId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Participant is not found in room."))
+            .enter();
+    }
+
     public boolean shouldCloseWaitingRoom() {
         if (status != QuizRoomStatus.WAITING) {
             return false;

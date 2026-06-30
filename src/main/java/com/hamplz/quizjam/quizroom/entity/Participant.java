@@ -70,6 +70,10 @@ public class Participant {
         this.online = false;
     }
 
+    public void enter() {
+        this.online = true;
+    }
+
     public void calculateScore(int score) {
         this.score.add(score);
     }
