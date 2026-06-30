@@ -3,6 +3,7 @@ package com.hamplz.quizjam.quizroom.service;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -27,5 +28,14 @@ public class ParticipantSessionRegistry {
     public void remove(String sessionId) {
         sessionToRoom.remove(sessionId);
         sessionToParticipant.remove(sessionId);
+    }
+
+    public void removeRoom(Long roomId) {
+        sessionToRoom.forEach((sessionId, registeredRoomId) -> {
+            if (Objects.equals(registeredRoomId, roomId)) {
+                sessionToRoom.remove(sessionId, registeredRoomId);
+                sessionToParticipant.remove(sessionId);
+            }
+        });
     }
 }
