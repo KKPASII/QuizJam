@@ -32,16 +32,19 @@ public class QuizPlayService {
 
     private final QuizQueryService quizQueryService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final QuizRoomCleanupService quizRoomCleanupService;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private final Map<Long, GameState> games = new ConcurrentHashMap<>();
     private final Map<Long, ConcurrentMap<Long, Integer>> results = new ConcurrentHashMap<>();
 
     public QuizPlayService(
         QuizQueryService quizQueryService,
-        SimpMessagingTemplate messagingTemplate
+        SimpMessagingTemplate messagingTemplate,
+        QuizRoomCleanupService quizRoomCleanupService
     ) {
         this.quizQueryService = quizQueryService;
         this.messagingTemplate = messagingTemplate;
+        this.quizRoomCleanupService = quizRoomCleanupService;
     }
 
     public void startGame(QuizRoomResponse room) {
@@ -55,6 +58,7 @@ public class QuizPlayService {
             previous.cancelTimer();
         }
         results.remove(room.roomId());
+        quizRoomCleanupService.cancelCleanup(room.roomId());
 
         broadcast(room.roomId(), QuizEventMessage.of("QUIZ_STARTED", Map.of(
             "roomId", room.roomId(),
@@ -123,6 +127,9 @@ public class QuizPlayService {
         );
 
         broadcast(room.roomId(), QuizEventMessage.of(finalized ? "RESULT_FINALIZED" : "RESULT_UPDATED", message));
+        if (finalized) {
+            quizRoomCleanupService.scheduleCleanup(room.roomId());
+        }
     }
 
     public void forceFinish(Long roomId) {
@@ -202,6 +209,7 @@ public class QuizPlayService {
             state.room.quizId(),
             state.questions.size()
         )));
+        quizRoomCleanupService.scheduleCleanup(state.room.roomId());
     }
 
     private void broadcast(Long roomId, QuizEventMessage message) {

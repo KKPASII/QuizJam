@@ -121,6 +121,12 @@ public class QuizRoomSerivce {
         quizRoomRepository.delete(room);
     }
 
+    @Transactional
+    public void deleteRoomIfExists(Long roomId) {
+        quizRoomRepository.findById(roomId)
+            .ifPresent(quizRoomRepository::delete);
+    }
+
     private QuizRoom findRoom(Long roomId) {
         return quizRoomRepository.findById(roomId)
             .orElseThrow(() -> new NotFoundException(ErrorCode.QUIZ_ROOM_NOT_FOUND));
