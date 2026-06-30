@@ -76,9 +76,15 @@ public class QuizRoomSerivce {
         Participant participant = room.joinAnonymous(resolvedNickname);
 
         QuizRoom savedRoom = quizRoomRepository.saveAndFlush(room);
+        Long participantId = savedRoom.getParticipants().stream()
+            .filter(savedParticipant -> !savedParticipant.isHost())
+            .filter(savedParticipant -> savedParticipant.getNickname().equals(participant.getNickname()))
+            .map(Participant::getId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Joined participant is not found."));
         return new JoinRoomResponse(
             toResponse(savedRoom),
-            participant.getId(),
+            participantId,
             participant.getNickname()
         );
     }
