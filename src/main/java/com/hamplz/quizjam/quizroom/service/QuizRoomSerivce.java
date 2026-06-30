@@ -113,6 +113,17 @@ public class QuizRoomSerivce {
     }
 
     @Transactional
+    public LeaveRoomResult leaveAndCloseWaitingRoomIfNeeded(Long roomId, Long participantId) {
+        QuizRoom room = findRoom(roomId);
+        room.leaveParticipant(participantId);
+        if (room.shouldCloseWaitingRoom()) {
+            quizRoomRepository.delete(room);
+            return LeaveRoomResult.closed(roomId);
+        }
+        return LeaveRoomResult.open(toResponse(room));
+    }
+
+    @Transactional
     public void deleteRoom(Long roomId, Long requestUserId) {
         QuizRoom room = findRoom(roomId);
         if (!room.getHostUserId().equals(requestUserId)) {

@@ -79,4 +79,28 @@ class QuizRoomTest {
 
         assertThat(participant.isOnline()).isFalse();
     }
+
+    @Test
+    @DisplayName("waiting room closes when host leaves")
+    void closeWaitingRoomWhenHostLeaves() {
+        QuizRoom room = QuizRoom.create(1L, 10L, "host", "ABCDEFGH", 20);
+        Participant host = room.getHostParticipant();
+        ReflectionTestUtils.setField(host, "id", 10L);
+
+        room.leaveParticipant(host.getId());
+
+        assertThat(room.shouldCloseWaitingRoom()).isTrue();
+    }
+
+    @Test
+    @DisplayName("waiting room stays open when guest leaves and host remains online")
+    void keepWaitingRoomWhenGuestLeaves() {
+        QuizRoom room = QuizRoom.create(1L, 10L, "host", "ABCDEFGH", 20);
+        Participant participant = room.joinAnonymous("guest");
+        ReflectionTestUtils.setField(participant, "id", 20L);
+
+        room.leaveParticipant(participant.getId());
+
+        assertThat(room.shouldCloseWaitingRoom()).isFalse();
+    }
 }

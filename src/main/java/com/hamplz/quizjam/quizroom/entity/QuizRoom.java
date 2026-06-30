@@ -104,6 +104,16 @@ public class QuizRoom {
             .ifPresent(Participant::leave);
     }
 
+    public boolean shouldCloseWaitingRoom() {
+        if (status != QuizRoomStatus.WAITING) {
+            return false;
+        }
+        Participant host = participants.getHost();
+        return host == null
+            || !host.isOnline()
+            || participants.getValues().stream().noneMatch(Participant::isOnline);
+    }
+
     private void ensureCanJoin() {
         if (!this.status.canJoin()) {
             throw new ConflictException(ErrorCode.QUIZ_ROOM_ALREADY_STARTED);

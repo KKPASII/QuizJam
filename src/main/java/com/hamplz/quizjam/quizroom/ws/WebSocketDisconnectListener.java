@@ -2,12 +2,15 @@ package com.hamplz.quizjam.quizroom.ws;
 
 import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import com.hamplz.quizjam.quizroom.dto.RoomEventMessage;
+import com.hamplz.quizjam.quizroom.service.LeaveRoomResult;
 import com.hamplz.quizjam.quizroom.service.ParticipantSessionRegistry;
 import com.hamplz.quizjam.quizroom.service.QuizRoomSerivce;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+
+import java.util.Map;
 
 @Component
 public class WebSocketDisconnectListener {
@@ -41,7 +44,17 @@ public class WebSocketDisconnectListener {
             return;
         }
 
-        QuizRoomResponse room = quizRoomService.leave(roomId, participantId);
+        LeaveRoomResult result = quizRoomService.leaveAndCloseWaitingRoomIfNeeded(roomId, participantId);
+        if (result.closed()) {
+            participantSessionRegistry.removeRoom(roomId);
+            messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId,
+                RoomEventMessage.of("ROOM_CLOSED", Map.of("roomId", roomId))
+            );
+            return;
+        }
+
+        QuizRoomResponse room = result.room();
         messagingTemplate.convertAndSend(
             "/topic/room/" + roomId,
             RoomEventMessage.of("ROOM_SNAPSHOT", room)

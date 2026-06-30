@@ -7,6 +7,7 @@ import com.hamplz.quizjam.quizroom.dto.QuizRoomResponse;
 import com.hamplz.quizjam.quizroom.dto.QuizStartRequest;
 import com.hamplz.quizjam.quizroom.dto.QuizSubmitRequest;
 import com.hamplz.quizjam.quizroom.dto.RoomEventMessage;
+import com.hamplz.quizjam.quizroom.service.LeaveRoomResult;
 import com.hamplz.quizjam.quizroom.service.ParticipantSessionRegistry;
 import com.hamplz.quizjam.quizroom.service.QuizPlayService;
 import com.hamplz.quizjam.quizroom.service.QuizRoomSerivce;
@@ -18,6 +19,7 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.Map;
 
 @Controller
 public class QuizRoomWebSocketController {
@@ -54,6 +56,21 @@ public class QuizRoomWebSocketController {
         );
 
         return response;
+    }
+
+    @MessageMapping("room.host.join")
+    public void joinHostRoom(
+        @Payload QuizStartRequest request,
+        @Header("simpSessionId") String sessionId,
+        Principal principal
+    ) {
+        Long userId = requireLoginUser(principal);
+        QuizRoomResponse room = quizRoomService.getRoom(request.roomId());
+        if (!room.hostUserId().equals(userId)) {
+            throw new IllegalStateException("Only host can register host room session.");
+        }
+
+        participantSessionRegistry.register(sessionId, room.roomId(), getHostParticipantId(room));
     }
 
     @MessageMapping("room.start")
@@ -124,10 +141,16 @@ public class QuizRoomWebSocketController {
             return;
         }
 
-        QuizRoomResponse room = quizRoomService.leave(roomId, participantId);
+        LeaveRoomResult result = quizRoomService.leaveAndCloseWaitingRoomIfNeeded(roomId, participantId);
+        if (result.closed()) {
+            participantSessionRegistry.removeRoom(roomId);
+            broadcastRoomClosed(roomId);
+            return;
+        }
+
         messagingTemplate.convertAndSend(
             "/topic/room/" + roomId,
-            RoomEventMessage.of("ROOM_SNAPSHOT", room)
+            RoomEventMessage.of("ROOM_SNAPSHOT", result.room())
         );
     }
 
@@ -144,5 +167,12 @@ public class QuizRoomWebSocketController {
             .map(participant -> participant.participantId())
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Host participant is not found."));
+    }
+
+    private void broadcastRoomClosed(Long roomId) {
+        messagingTemplate.convertAndSend(
+            "/topic/room/" + roomId,
+            RoomEventMessage.of("ROOM_CLOSED", Map.of("roomId", roomId))
+        );
     }
 }
