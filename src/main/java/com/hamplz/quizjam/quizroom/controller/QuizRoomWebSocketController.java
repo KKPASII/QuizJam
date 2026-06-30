@@ -59,10 +59,13 @@ public class QuizRoomWebSocketController {
     @MessageMapping("room.start")
     public void startRoom(
         @Payload QuizStartRequest request,
+        @Header("simpSessionId") String sessionId,
         Principal principal
     ) {
         Long userId = requireLoginUser(principal);
         QuizRoomResponse room = quizRoomService.startGame(request.roomId(), userId);
+        Long hostParticipantId = getHostParticipantId(room);
+        participantSessionRegistry.register(sessionId, room.roomId(), hostParticipantId);
 
         messagingTemplate.convertAndSend(
             "/topic/room/" + room.roomId(),
@@ -133,5 +136,13 @@ public class QuizRoomWebSocketController {
             throw new IllegalStateException("Login WebSocket principal is required.");
         }
         return Long.valueOf(principal.getName());
+    }
+
+    private Long getHostParticipantId(QuizRoomResponse room) {
+        return room.participants().stream()
+            .filter(participant -> participant.host())
+            .map(participant -> participant.participantId())
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Host participant is not found."));
     }
 }
