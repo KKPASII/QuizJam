@@ -47,6 +47,7 @@ spring:
             client-secret: ${KAKAO_CLIENT_SECRET}
             redirect-uri: "http://localhost:8081/api/kakao/callback"
             logout-redirect-uri: "http://localhost:8081/api/kakao/logout/callback"
+            frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
             authorization-grant-type: authorization_code
             scope:
               - profile_nickname

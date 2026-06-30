@@ -4,6 +4,7 @@ import com.hamplz.quizjam.auth.KakaoOauthService;
 import com.hamplz.quizjam.auth.dto.AuthToken;
 import com.hamplz.quizjam.auth.dto.AuthTokenResponse;
 import com.hamplz.quizjam.auth.dto.ClientInfo;
+import com.hamplz.quizjam.auth.dto.KakaoProperties;
 import com.hamplz.quizjam.auth.entity.DeviceType;
 import com.hamplz.quizjam.auth.service.RefreshTokenService;
 import com.hamplz.quizjam.user.User;
@@ -28,13 +29,22 @@ public class LoginController {
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
     private final RefreshTokenService refreshTokenService;
+    private final KakaoProperties kakaoProperties;
 
-    public LoginController(JwtUtil jwtUtil, KakaoOauthService kakaoOauthService, TokenIssuer tokenIssuer, CookieUtil cookieUtil, RefreshTokenService refreshTokenService) {
+    public LoginController(
+        JwtUtil jwtUtil,
+        KakaoOauthService kakaoOauthService,
+        TokenIssuer tokenIssuer,
+        CookieUtil cookieUtil,
+        RefreshTokenService refreshTokenService,
+        KakaoProperties kakaoProperties
+    ) {
         this.jwtUtil = jwtUtil;
         this.kakaoOauthService = kakaoOauthService;
         this.tokenIssuer = tokenIssuer;
         this.cookieUtil = cookieUtil;
         this.refreshTokenService = refreshTokenService;
+        this.kakaoProperties = kakaoProperties;
     }
 
     @GetMapping("/api/kakao/login")
@@ -46,8 +56,7 @@ public class LoginController {
     @PostMapping("/api/logout")
     public ResponseEntity<Void> logout(
         HttpServletRequest request,
-        HttpServletResponse response,
-        @LoginUser Long userId
+        HttpServletResponse response
     ) {
         cookieUtil.clearCookie(response, "accessToken");
         cookieUtil.clearCookie(response, "refreshToken");
@@ -71,7 +80,7 @@ public class LoginController {
         cookieUtil.setRefreshTokenCookie(response, tokenSet.refreshToken());
 
         return ResponseEntity.status(HttpStatus.FOUND)
-            .header("Location", "http://localhost:5173/")
+            .header("Location", frontendBaseUrl())
             .build();
     }
 
@@ -101,8 +110,16 @@ public class LoginController {
     public ResponseEntity<Void> kakaoLogoutCallback(HttpServletResponse response) {
         clearAuthCookies(response);
         return ResponseEntity.status(HttpStatus.FOUND)
-            .header("Location", "http://localhost:5173/")
+            .header("Location", frontendBaseUrl())
             .build();
+    }
+
+    private String frontendBaseUrl() {
+        String frontendBaseUrl = kakaoProperties.frontendBaseUrl();
+        if (frontendBaseUrl == null || frontendBaseUrl.isBlank()) {
+            return "http://localhost:5173/";
+        }
+        return frontendBaseUrl.endsWith("/") ? frontendBaseUrl : frontendBaseUrl + "/";
     }
 
     private ClientInfo getClientInfo(HttpServletRequest request) {
