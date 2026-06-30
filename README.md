@@ -15,8 +15,8 @@ QuizJam은 PDF 문서를 기반으로 AI가 퀴즈를 자동 생성하고,
 
 <h2>🎥 시연 영상 (Click!)</h2>
 
-<a href="https://www.youtube.com/watch?v=386D_PckPxE" target="_blank">
-  <img src="https://img.youtube.com/vi/386D_PckPxE/maxresdefault.jpg" 
+<a href="https://www.youtube.com/watch?v=tzpONIWZs3Q" target="_blank">
+  <img src="https://img.youtube.com/vi/tzpONIWZs3Q/maxresdefault.jpg" 
        alt="Demo Video"
        width="700">
 </a>
@@ -55,17 +55,3 @@ QuizJam은 PDF 문서를 기반으로 AI가 퀴즈를 자동 생성하고,
 ### 🤖 AI / PDF
 ![OpenAI](https://img.shields.io/badge/OpenAI_API-412991?style=for-the-badge&logo=openai&logoColor=white)
 ![PDFBox](https://img.shields.io/badge/Apache_PDFBox-D22128?style=for-the-badge&logo=apache&logoColor=white)
-
----
-
-### PDF 입력 길이 제어 문제
-- **문제**: 대용량 PDF를 그대로 프롬프트에 포함하면 토큰 수가 과도하게 증가해 응답 지연 또는 요청 실패 가능성이 있었습니다.
-- **해결**:
-    - PDF 전체 텍스트를 추출한 뒤
-    - 프롬프트 지시문 토큰 수를 먼저 계산하고
-    - 남은 토큰 한도에 맞춰 PDF 본문을 잘라내는 방식으로 입력 길이를 제어했습니다.
-
----
-
-## 개선이 필요한 점
-
