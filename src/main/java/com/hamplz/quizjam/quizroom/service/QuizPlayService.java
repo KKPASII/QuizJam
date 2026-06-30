@@ -1,5 +1,6 @@
 package com.hamplz.quizjam.quizroom.service;
 
+import com.hamplz.quizjam.quiz.entity.Answer;
 import com.hamplz.quizjam.quiz.entity.Question;
 import com.hamplz.quizjam.quiz.service.QuizQueryService;
 import com.hamplz.quizjam.quizroom.dto.AnswerSubmittedMessage;
@@ -48,12 +49,15 @@ public class QuizPlayService {
     }
 
     public void startGame(QuizRoomResponse room) {
-        List<Question> questions = quizQueryService.getQuizQuestions(room.quizId());
+        List<Question> questions = quizQueryService.getQuizQuestions(room.quizId()).stream()
+            .sorted(Comparator.comparing(Question::getId))
+            .toList();
+        List<Answer> answers = quizQueryService.getQuizAnswers(room.quizId());
         if (questions.isEmpty()) {
             throw new IllegalStateException("Quiz has no questions.");
         }
 
-        GameState previous = games.put(room.roomId(), new GameState(room, questions));
+        GameState previous = games.put(room.roomId(), new GameState(room, questions, answers));
         if (previous != null) {
             previous.cancelTimer();
         }
@@ -185,6 +189,7 @@ public class QuizPlayService {
         }
 
         Question question = state.questions.get(state.questionIndex);
+        scoreCurrentQuestion(state);
         broadcast(roomId, QuizEventMessage.of("QUESTION_CLOSED", new QuestionClosedMessage(
             roomId,
             state.room.quizId(),
@@ -195,6 +200,31 @@ public class QuizPlayService {
 
         state.questionIndex++;
         openQuestion(roomId);
+    }
+
+    private void scoreCurrentQuestion(GameState state) {
+        Answer answer = state.currentAnswer();
+        if (answer == null) {
+            return;
+        }
+
+        boolean hasOptions = state.currentQuestion().getOptions() != null
+            && !state.currentQuestion().getOptions().isEmpty();
+        String correctAnswer = answer.getCorrectAnswer();
+        state.submissions.values().forEach(submission -> {
+            if (isCorrect(submission.answer(), correctAnswer, hasOptions)) {
+                state.liveScores.merge(submission.participantId(), 1, Integer::sum);
+            }
+        });
+
+        QuizResultMessage message = new QuizResultMessage(
+            state.room.roomId(),
+            state.submissions.size(),
+            state.room.participants().size(),
+            false,
+            buildRankings(state.room, state.liveScores)
+        );
+        broadcast(state.room.roomId(), QuizEventMessage.of("SCORE_UPDATED", message));
     }
 
     private void finishAllQuestions(GameState state) {
@@ -253,6 +283,25 @@ public class QuizPlayService {
         return answer == null ? "" : answer.trim();
     }
 
+    private boolean isCorrect(String userAnswer, String correctAnswer, boolean hasOptions) {
+        if (userAnswer == null || userAnswer.isBlank()) {
+            return false;
+        }
+        if (hasOptions) {
+            return Objects.equals(normalizeAnswer(userAnswer), normalizeAnswer(correctAnswer));
+        }
+
+        String user = normalizeForComparison(userAnswer);
+        String correct = normalizeForComparison(correctAnswer);
+        return user.equals(correct) || user.contains(correct) || correct.contains(user);
+    }
+
+    private String normalizeForComparison(String answer) {
+        return normalizeAnswer(answer)
+            .toLowerCase()
+            .replaceAll("[^\\p{L}\\p{N}]", "");
+    }
+
     @PreDestroy
     public void shutdown() {
         scheduler.shutdownNow();
@@ -261,14 +310,17 @@ public class QuizPlayService {
     private static class GameState {
         private final QuizRoomResponse room;
         private final List<Question> questions;
+        private final List<Answer> answers;
         private final ConcurrentMap<Long, SubmissionSnapshot> submissions = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Long, Integer> liveScores = new ConcurrentHashMap<>();
         private int questionIndex;
         private long deadlineEpochMs;
         private ScheduledFuture<?> timer;
 
-        private GameState(QuizRoomResponse room, List<Question> questions) {
+        private GameState(QuizRoomResponse room, List<Question> questions, List<Answer> answers) {
             this.room = room;
             this.questions = questions;
+            this.answers = answers;
         }
 
         private Question currentQuestion() {
@@ -276,6 +328,13 @@ public class QuizPlayService {
                 return null;
             }
             return questions.get(questionIndex);
+        }
+
+        private Answer currentAnswer() {
+            if (questionIndex < 0 || questionIndex >= answers.size()) {
+                return null;
+            }
+            return answers.get(questionIndex);
         }
 
         private void cancelTimer() {
